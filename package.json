@@ -1,10 +1,15 @@
 {
   "name": "ganomede-events",
   "version": "1.0.0",
+  "api": "events/v1",
   "description": "NodeJS pub/sub library using ganomede-notifications",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "startw": "nodemon --watch src/ --watch index.js --watch config.js --exec \"npm start\"",
+    "test": "BUNYAN_LEVEL=ERROR mocha --bail --no-exit --throw-deprecation tests/*.test.js",
+    "testw": "nodemon --watch src/ --watch tests/ --watch config.js --exec \"npm test\"",
+    "lint": "eslint src/ tests/ index.js config.js"
   },
   "repository": {
     "type": "git",
@@ -20,5 +25,18 @@
   "bugs": {
     "url": "https://github.com/j3k0/ganomede-events/issues"
   },
-  "homepage": "https://github.com/j3k0/ganomede-events#readme"
+  "homepage": "https://github.com/j3k0/ganomede-events#readme",
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "eslint": "^3.8.0",
+    "mocha": "^3.1.2",
+    "supertest": "^2.0.0"
+  },
+  "dependencies": {
+    "async": "^2.1.2",
+    "bunyan": "^1.8.1",
+    "curtain-down": "^1.0.0",
+    "lodash": "^4.17.2",
+    "restify": "^4.1.1"
+  }
 }

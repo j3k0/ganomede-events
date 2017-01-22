@@ -3,5 +3,3 @@ NODE_VERSION=v6
 
 nvm ls $NODE_VERSION || nvm install $NODE_VERSION
 nvm use $NODE_VERSION
-
-export NODE_PATH=/usr/lib/node_modules # temporary

@@ -1,69 +1,58 @@
 'use strict';
 
-var buff = {};
+const curtain = require('curtain-down');
+const redis = require('redis');
+const restify = require('restify');
+const config = require('../config');
+const secret = require('./secret');
+const store = require('./events.store');
+const utils = require('./utils');
 
-// ToDo: (1) Implement polling.
-// ToDo: (2) Use Redis.
+const client = redis.createClient(config.redis.port, config.redis.host);
+curtain.on(() => {
+  client.quit();
+});
 
-const sendEvents = (req, res, next) => {
-  if (!('secret' in req.params) ||
-      !('channel' in req.params) ||
-      req.params.secret !== process.env.API_SECRET) {
-    res.status(401);
-    res.end();
-  } else {
-    res.header('Content-Type', 'application/json; charset=UTF-8');
-    let chan = req.params.channel;
-    let full = buff[chan];
-    if (typeof full === 'undefined') {
-      full = [];
-    }
-    let begin = 0;
-    if ('after' in req.params) {
-      begin = parseInt(req.params.after) + 1;
-    }
-    let len = full.length;
-    let data = full.slice(begin, len);
-    if (data.length === 0) {
-      setTimeout(() => { res.end(data) }, 1000);
+const addEvent = (req, res, next) => {
+  try {
+    let body = utils.stringToObject(req.body);
+    store.addEvent(client, body, (err, msg) => {
+      res.header('Content-Type', 'application/json; charset=UTF-8');
+      res.json(msg);
+      next();
+    });
+  } catch (e) {
+    if (e instanceof TypeError) {
+      res.end(
+        utils.logError(new restify.InvalidContentError('invalid content'), next)
+      );
     } else {
-      res.end(JSON.stringify(data));
+      throw e;
     }
-  }
-  buff = {};
-  next();
+  };
 };
 
 const getEvents = (req, res, next) => {
-  res.header('Content-Type', 'application/json; charset=UTF-8');
-  if ('channel' in req.params &&
-      'secret' in req.params &&
-      req.params.secret === process.env.API_SECRET) {
-    let chan = req.params.channel;
-    let len = 0;
-    if (typeof buff[chan] === 'undefined') {
-      buff[chan] = [];
+  try {
+    let params = utils.stringToObject(req.params);
+    store.getEvents(client, params, (err, msg) => {
+      res.header('Content-Type', 'application/json; charset=UTF-8');
+      res.json(msg);
+      next();
+    });
+  } catch (e) {
+    if (e instanceof TypeError) {
+      res.end(
+        utils.logError(new restify.InvalidContentError('invalid content'), next)
+      );
     } else {
-      len = buff[chan].length;
+      throw e;
     }
-    let ret = {
-      id: len,
-      timestamp: new Date(),
-    }
-    buff[chan][len] = ret;
-    buff[chan][len].from = req.params.from;
-    buff[chan][len].type = req.params.type;
-    buff[chan][len].data = req.params.data;
-    res.end(JSON.stringify(ret));
-  }
-  else {
-    res.status(401);
-    res.end();
-  }
-  next();
+  };
 };
 
 module.exports = (prefix, server) => {
-  server.get(`${prefix}/events`, sendEvents);
-  server.post(`${prefix}/events`, getEvents);
+  server.use(secret.checkSecret);
+  server.get(`${prefix}/events`, getEvents);
+  server.post(`${prefix}/events`, addEvent);
 };

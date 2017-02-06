@@ -2,6 +2,7 @@
 
 const async = require('async');
 const cluster = require('cluster');
+const redis = require('redis');
 const restify = require('restify');
 const curtain = require('curtain-down');
 const config = require('./config');
@@ -44,15 +45,23 @@ const master = () => {
 const child = () => {
   const server = createServer();
 
+  // Clients
+  const client = redis.createClient(config.redis.port, config.redis.host)
+  const sub = redis.createClient(config.redis.port, config.redis.host)
+  const pub = redis.createClient(config.redis.port, config.redis.host)
+
   curtain.on(() => {
     logger.info('worker stopping…');
 
     async.parallel([
+      (cb) => client.quit(cb),
+      (cb) => sub.quit(cb),
+      (cb) => pub.quit(cb),
       (cb) => server.close(cb),
     ], () => cluster.worker.disconnect());
   });
 
-  events(config.http.prefix, server);
+  events(config.http.prefix, server, client, sub, pub);
   about(config.http.prefix, server);
   ping(config.http.prefix, server);
 

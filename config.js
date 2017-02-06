@@ -51,5 +51,5 @@ module.exports = {
   },
 
   secret: process.env.API_SECRET,
-  longPollDuration: 500
+  pollDuration: 500
 };

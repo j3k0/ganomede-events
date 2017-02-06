@@ -1,76 +1,54 @@
-'use strict';
+( () => {
 
-const logger = require('./logger');
+'use strict'
 
-const logError = (err, next, type) => {
-  type = type || 'error';
-  logger[type](err);
-  return (next && next(err));
-};
+const logger = require('./logger')
 
+// Callbacks
+const loggingCallback = (callback, error, message) => {
+  error && logger['error'](error)
+  typeof callback === 'function' && callback(error, message)
+}
+
+const messageCallback = (callback, error, message) => {
+  typeof callback === 'function' && callback(error, message)
+}
+
+const customCallback = (callback, custom, error) => {
+  typeof callback === 'function' && callback(error, custom)
+}
+
+// Transforms
 const stringToObject = (data) => {
-  return (
-    (typeof data === 'string') &&
-      JSON.parse(data) ||
-    data
-  );
-};
+  return typeof data === 'string' ? JSON.parse(data) : data
+}
 
 const objectToString = (data) => {
-  return (
-    (typeof data === 'object') &&
-      JSON.stringify(data) ||
-    data
-  );
-};
+  return typeof data === 'object' ? JSON.stringify(data) : data
+}
 
-const objectCheck = (variable, label) => {
-  if ((typeof variable !== 'object') ||
-      (variable === null)) {
-    throw new TypeError(label + ' should be a non-null object');
-  };
-};
+const zeroIfNaN = (data) => {
+  let intdata = parseInt(data)
+  return isNaN(intdata) ? 0 : intdata
+}
 
-const propertyCheck = (object, property, label) => {
-  if (!(property in object)) {
-    throw new TypeError(label + ' should have ' + property);
-  };
-};
+const defaultIfNotFunction = (data, def) => {
+  return typeof data === 'function' ? data : def
+}
 
-const stringCheck = (variable, label) => {
-  if (typeof variable !== 'string') {
-    throw new TypeError(label + ' should be a string');
-  };
-};
-
-const stringCheckIfExists = (object, property, label) => {
-  if (property in object) {
-    stringCheck(object[property], label);
-  };
-};
-
-const numberCheck = (variable, label) => {
-  if ( !((typeof variable === 'number') || 
-      (typeof variable === 'string') &&
-      (!isNaN(parseInt(variable)))) ) {
-    throw new TypeError(label + ' should be a number');
-  };
-};
-
-const numberCheckIfExists = (object, property, label) => {
-  if (property in object) {
-    numberCheck(object[property], label);
-  };
-};
+const nopIfNotFunction = (data) => {
+  return defaultIfNotFunction(data, () => {})
+}
 
 module.exports = {
-  logError:             logError,
-  stringToObject:       stringToObject,
-  objectToString:       objectToString,
-  objectCheck:          objectCheck,
-  propertyCheck:        propertyCheck,
-  stringCheck:          stringCheck,
-  stringCheckIfExists:  stringCheckIfExists,
-  numberCheck:          numberCheck,
-  numberCheckIfExists:  numberCheckIfExists,
-};
+  loggingCallback,
+  messageCallback,
+  customCallback,
+  stringToObject,
+  objectToString,
+  zeroIfNaN,
+  defaultIfNotFunction,
+  nopIfNotFunction,
+}
+
+})()

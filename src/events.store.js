@@ -1,11 +1,7 @@
-( () => {
-
-'use strict'
-
 const async = require('async')
 const store = require('./redis.store')
 const utils = require('./utils')
-
+const identity = (x) => x
 
 // Constants
 const idProp = 'id'
@@ -16,80 +12,68 @@ const invalidEvent = 'invalid event'
 const invalidChannel = 'invalid channel'
 const invalidAfterId = 'invalid after ID'
 
-const _validEvent = (event) => {
-  return typeof event === 'object' && event !== null
+const isValidEvent = (event) =>
+  typeof event === 'object' && event !== null
+
+const isValidChannel = (channel) =>
+  typeof channel === 'string'
+
+const eventData = (eventData) =>
+  eventData ? { data: JSON.stringify(eventData) } : {}
+
+const eventBase = (index, timestamp) => ({
+  id: index,
+  timestamp
+})
+
+const eventFactory = (data, index) =>
+  Object.assign({}, data,
+  eventBase(index, new Date().getTime()),
+  eventData(data.data))
+
+const addEvent = (redisClient, event, channel, callback) => {
+
+  if (!isValidEvent(event))
+    return callback(invalidEvent)
+  if (!isValidChannel(channel))
+    return callback(invalidChannel)
+
+  store.addItem(redisClient, event, channel, eventFactory, callback)
 }
 
-const _validChannel = (channel) => {
-  return typeof channel === 'string'
-}
-
-const _createResponse = (item, ndx) => {
-  let res = {
-    id: ndx,
-    timestamp: item[timeProp]
-  }
-  return res
-}
-
-const _setEventProperties = (event, ndx) => {
-  event[idProp] = ndx
-  event[timeProp] = new Date().getTime()
-  return event
-}
-
-const _formatEventDataForStore = (event) => {
-  dataProp in event &&
-    (event[dataProp] = utils.objectToString(event[dataProp]))
-  return event
-}
-
-const _transformEvent = (event, ndx) => {
-  event = _setEventProperties(event, ndx)
-  event = _formatEventDataForStore(event)
-  return event
-}
-
-// ToDo: Move channel checking to caller
-const addEvent = (client, event, channel, callback) => {
-  let cb = utils.messageCallback.bind(null, callback)
-  _validEvent(event) || cb(invalidEvent)
-  _validChannel(channel) || cb(invalidChannel)
-  _validEvent(event) && _validChannel(channel) &&
-    store.addItem(client, event, channel, _transformEvent, _createResponse, cb)
-}
-
-const _validAfterId = (after) => {
+const isValidAfterId = (after) => {
   return after === undefined ||
     typeof after === 'number' || 
     typeof after === 'string' && !isNaN(parseInt(after))
 }
 
-const _formatEventNumbers = (event) => {
-  event[idProp] = parseInt(event[idProp])
-  event[timeProp] = parseInt(event[timeProp])
-  return event
-}
+const formatEventCore = (event) => ({
+  id: parseInt(event.id),
+  timestamp: parseInt(event.timestamp)
+})
 
-const _formatEventDataForUse = (event) => {
-  dataProp in event &&
-    (event[dataProp] = utils.stringToObject(event[dataProp]))
-  return event
-}
+const formatEventData = (eventData) =>
+  eventData ? { data: JSON.parse(eventData) } : {}
 
-const _formatEvent = (event) => {
-  event = _formatEventNumbers(event)
-  event = _formatEventDataForUse(event)
-  return event
-}
+const formatEvent = (event) => Object.assign({},
+  formatEventCore(event),
+  formatEventData(event.data))
 
-// ToDo: Move channel and after ID checking to caller
-const getEventsAfterId = (client, channel, id, callback) => {
-  let cb = utils.messageCallback.bind(null, callback)
-  _validChannel(channel) || cb(invalidChannel)
-  _validAfterId(id) || cb(invalidAfterId)
-  _validChannel(channel) && _validAfterId(id) &&
-    store.getItems(client, channel, id, _formatEvent, cb)
+const getEventsAfterId = (redisClient, channel, id, callback) => {
+
+  callback = callback || identity
+
+  if (!isValidChannel(channel))
+    return callback(new Error(invalidChannel))
+
+  if (!isValidAfterId(id))
+    return callback(new Error(invalidAfterId))
+
+  const done = (err, items) => err
+    ? callback(err)
+    : callback(null, items.map(formatEvent))
+
+  store.getItems(redisClient, channel, id, done)
 }
 
 module.exports = {
@@ -99,5 +83,3 @@ module.exports = {
   addEvent,
   getEventsAfterId,
 }
-
-})()

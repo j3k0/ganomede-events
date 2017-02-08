@@ -10,12 +10,7 @@ const poll = require('./poll')
 const secret = require('./secret')
 const store = require('./events.store')
 const utils = require('./utils')
-
-
-// Constants
-const channelProp = 'channel'
-const afterProp = 'after'
-const idProp = 'id'
+const logger = require('./logger')
 
 
 const _sendJsonResponse = (res, msg, next) => {
@@ -24,54 +19,53 @@ const _sendJsonResponse = (res, msg, next) => {
   next()
 }
 
-const _invalidPostContent = (err) => {
-  return err === store.invalidEvent ||
-    err === store.invalidChannel
-}
+const isInvalidPostContent = (err) =>
+  err === store.invalidEvent ||
+  err === store.invalidChannel
 
-const _formatPostError = (err) => {
-  return _invalidPostContent(err) ? new restify.InvalidContentError('invalid content') :
-    null
-}
+const formatPostError = (err) =>
+  isInvalidPostContent(err)
+    ? new restify.InvalidContentError('invalid content')
+    : err
 
 const postEvent = (client, pub, req, res, next) => {
-  let body = utils.stringToObject(req.body)
-  let ch = body[channelProp]
-  delete body[channelProp]
-  next = utils.loggingCallback.bind(null, next)
-  store.addEvent(client, body, ch, (error, id_time) => {
-    let err = _formatPostError(error)
-    err && next(err)
-    err || (() => {
-      _sendJsonResponse(res, id_time, next)
-      poll.trigger(pub, ch, id_time[idProp], (err) => {
-        err && next(new restify.InternalServerError('wrong use of poll trigger'))
-      })
-    })()
+  // let body = utils.stringToObject(req.body)
+  const body = req.body
+  logger.info({body:req.body})
+  const ch = body.channel
+  // next = utils.loggingCallback.bind(null, next)
+  store.addEvent(client, body, ch, (err, id_time) => {
+    if (err)
+      return next(formatPostError(err))
+    _sendJsonResponse(res, id_time, next)
+    poll.trigger(pub, ch, id_time.id, (err) => {
+      if (err)
+        log.error(err, 'poll.trigger failed')
+    })
   })
 }
 
-const _invalidGetContent = (err) => {
-  return err === store.invalidChannel ||
-    err === store.invalidAfterId
-}
+const isInvalidGetContent = (err) =>
+  err === store.invalidChannel
+    || err === store.invalidAfterId
 
-const _formatGetError = (err) => {
-  return _invalidGetContent(err) ? new restify.InvalidContentError('invalid content') :
-    null
-}
+const _formatGetError = (err) =>
+  isInvalidGetContent(err)
+    ? new restify.InvalidContentError('invalid content')
+    : err
 
 const _trigger = (res, next, client, id, channel, message, clear) => {
-  let afterId = utils.zeroIfNaN(id)
-  message > afterId && (() => {
+  const afterId = utils.zeroIfNaN(id)
+  if (message > afterId) {
     clear()
     store.getEventsAfterId(client, channel, afterId, (error, events) => {
-      let err = _formatGetError(error)
-      err && next(err)
-      err ||
+      const err = _formatGetError(error)
+      if (err)
+        next(err)
+      else
         _sendJsonResponse(res, events, next)
     })
-  })()
+  }
 }
 
 const _timeout = (next, unsubscribe) => {
@@ -81,8 +75,8 @@ const _timeout = (next, unsubscribe) => {
 
 const getEvents = (client, sub, req, res, next) => {
   let params = utils.stringToObject(req.params)
-  let ch = params[channelProp]
-  let id = params[afterProp]
+  let ch = params.channel
+  let id = params.after
   next = utils.loggingCallback.bind(null, next)
   store.getEventsAfterId(client, ch, id, (error, events) => {
     let err = _formatGetError(error)

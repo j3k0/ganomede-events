@@ -5,6 +5,7 @@
 const restify = require('restify')
 const utils = require('./utils')
 const config = require('../config')
+const logger = require('./logger');
 
 const secretProp = 'secret'
 
@@ -41,9 +42,10 @@ const _removeSecret = (req) => {
 const checkSecret = (req, res, next) => {
   let data = _getParams(req)
   let err = _getError(data)
-  _missingSecret(data) || _removeSecret(req)
-  let nxt = utils.loggingCallback.bind(null, next)
-  nxt(err)
+  if (!_missingSecret(data))
+    _removeSecret(req)
+  if (err) logger.error(err, "checkSecret failed");
+  next(err);
 }
 
 module.exports = {

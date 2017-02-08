@@ -10,7 +10,7 @@ const router = require('../src/events.router')
 const config = require('../config')
 
 describe('events-router', () => {
-  const server = createServer()
+  const server = createServer({ handleUncaughtExceptions: false })
 
   let client, sub, pub
 
@@ -97,16 +97,16 @@ describe('events-router', () => {
   const getTimeout = 1000
 
   // expectations
-  const okStat = 200
-  const badStat = 400
-  const unauthStat = 401
-  const timeoutStat = 408
+  const okStatus = 200
+  const badStatus = 400
+  const unauthStatus = 401
+  const timeoutStatus = 408
 
   const typeProperty = 'content-type'
   const jsonType = 'application/json'
 
   it(`@ ${url}: Invalid POST on ${channel1} - incorrect secret`, (done) => {
-    testPost(url, unauthStat, {
+    testPost(url, unauthStatus, {
           secret: wrongSecret,
           channel: channel1
         }, done, () => {
@@ -115,7 +115,7 @@ describe('events-router', () => {
   })
 
   it(`@ ${url}: Invalid POST on ${channel1} - missing secret`, (done) => {
-    testPost(url, badStat, {
+    testPost(url, badStatus, {
           channel: channel1
         }, done, () => {
       done()
@@ -123,7 +123,7 @@ describe('events-router', () => {
   })
 
   it(`@ ${url}: Invalid POST - missing channel`, (done) => {
-    testPost(url, badStat, {
+    testPost(url, badStatus, {
           secret: rightSecret
         }, done, () => {
       done()
@@ -131,7 +131,7 @@ describe('events-router', () => {
   })
 
   it(`@ ${url}: Valid POST on ${channel1}`, (done) => {
-    testPost(url, okStat, {
+    testPost(url, okStatus, {
           secret: rightSecret,
           channel: channel1
         }, done, (res) => {
@@ -144,7 +144,7 @@ describe('events-router', () => {
   })
 
   it(`@ ${url}: Invalid GET on ${channel1} - incorrect secret`, (done) => {
-    testGet(url, unauthStat, {
+    testGet(url, unauthStatus, {
           secret: wrongSecret,
           channel: channel1
         }, done, () => {
@@ -153,7 +153,7 @@ describe('events-router', () => {
   })
 
   it(`@ ${url}: Invalid GET on ${channel1} - missing secret`, (done) => {
-    testGet(url, badStat, {
+    testGet(url, badStatus, {
           channel: channel1
         }, done, () => {
       done()
@@ -161,7 +161,7 @@ describe('events-router', () => {
   })
 
   it(`@ ${url}: Invalid GET - missing channel`, (done) => {
-    testGet(url, badStat, {
+    testGet(url, badStatus, {
           secret: rightSecret
         }, done, () => {
       done()
@@ -169,7 +169,7 @@ describe('events-router', () => {
   })
 
   it(`@ ${url}: Valid GET on empty ${channel1}`, (done) => {
-    testGet(url, timeoutStat, {
+    testGet(url, timeoutStatus, {
           secret: rightSecret,
           channel: 'asd'
         }, done, () => {
@@ -179,7 +179,7 @@ describe('events-router', () => {
 
   it(`@ ${url}: Valid POST followed by GET on ${channel1}`, (done) => {
     let eventId
-    testPost(url, okStat, {
+    testPost(url, okStatus, {
           secret: rightSecret,
           channel: channel1
         }, done, (res) => {
@@ -189,7 +189,7 @@ describe('events-router', () => {
       eventId = res.body.id
       expect(res.body).to.have.property('timestamp')
     }).then( () => {
-      return testGet(url, okStat, {
+      return testGet(url, okStatus, {
             secret: rightSecret,
             channel: channel1,
             afterId: eventId - 1
@@ -205,7 +205,7 @@ describe('events-router', () => {
   })
 
   it(`@ ${url}: Valid POST on ${channel1} followed by GET on empty ${channel2}`, (done) => {
-    testPost(url, okStat, {
+    testPost(url, okStatus, {
           secret: rightSecret,
           channel: channel1
         }, done, (res) => {
@@ -214,7 +214,7 @@ describe('events-router', () => {
       expect(res.body).to.have.property('id')
       expect(res.body).to.have.property('timestamp')
     }).then(
-      testGet(url, timeoutStat, {
+      testGet(url, timeoutStatus, {
             secret: rightSecret,
             channel: channel2
           }, done, () => {
@@ -225,7 +225,7 @@ describe('events-router', () => {
 
   it(`@ ${url}: 2 Valid POSTs followed by GET on ${channel1}`, (done) => {
     let eventId
-    testPost(url, okStat, {
+    testPost(url, okStatus, {
           secret: rightSecret,
           channel: channel1
         }, done, (res) => {
@@ -235,7 +235,7 @@ describe('events-router', () => {
       eventId = res.body.id
       expect(res.body).to.have.property('timestamp')
     }).then(
-      testPost(url, okStat, {
+      testPost(url, okStatus, {
             secret: rightSecret,
             channel: channel1
           }, done, (res) => {
@@ -245,7 +245,7 @@ describe('events-router', () => {
         expect(res.body).to.have.property('timestamp')
       })
     ).then( () => {
-      testGet(url, okStat, {
+      testGet(url, okStatus, {
             secret: rightSecret,
             channel: channel1,
             afterId: eventId - 1
@@ -264,7 +264,7 @@ describe('events-router', () => {
 
   it(`@ ${url}: Valid POST followed by GET on ${channel1} after added event`, (done) => {
     let eventId
-    testPost(url, okStat, {
+    testPost(url, okStatus, {
           secret: rightSecret,
           channel: channel1
         }, done, (res) => {
@@ -274,7 +274,7 @@ describe('events-router', () => {
       eventId = res.body.id
       expect(res.body).to.have.property('timestamp')
     }).then( () => {
-      testGet(url, timeoutStat, {
+      testGet(url, timeoutStatus, {
             secret: rightSecret,
             channel: channel1,
             afterId: eventId
@@ -286,7 +286,7 @@ describe('events-router', () => {
 
   it(`@ ${url}: 2 Valid POSTs followed by GET on ${channel1} after first added event`, (done) => {
     let eventId
-    testPost(url, okStat, {
+    testPost(url, okStatus, {
           secret: rightSecret,
           channel: channel1
         }, done, (res) => {
@@ -296,7 +296,7 @@ describe('events-router', () => {
       eventId = res.body.id
       expect(res.body).to.have.property('timestamp')
     }).then(
-      testPost(url, okStat, {
+      testPost(url, okStatus, {
             secret: rightSecret,
             channel: channel1
           }, done, (res) => {
@@ -306,7 +306,7 @@ describe('events-router', () => {
         expect(res.body).to.have.property('timestamp')
       })
     ).then( () => {
-      testGet(url, okStat, {
+      testGet(url, okStatus, {
             secret: rightSecret,
             channel: channel1,
             afterId: eventId
@@ -323,7 +323,7 @@ describe('events-router', () => {
 
   it(`@ ${url}: 3 Valid POSTs followed by GET on ${channel1} after first added event`, (done) => {
     let eventId
-    testPost(url, okStat, {
+    testPost(url, okStatus, {
           secret: rightSecret,
           channel: channel1
         }, done, (res) => {
@@ -333,7 +333,7 @@ describe('events-router', () => {
       eventId = res.body.id
       expect(res.body).to.have.property('timestamp')
     }).then(
-      testPost(url, okStat, {
+      testPost(url, okStatus, {
             secret: rightSecret,
             channel: channel1
           }, done, (res) => {
@@ -343,7 +343,7 @@ describe('events-router', () => {
         expect(res.body).to.have.property('timestamp')
       })
     ).then(
-      testPost(url, okStat, {
+      testPost(url, okStatus, {
             secret: rightSecret,
             channel: channel1
           }, done, (res) => {
@@ -353,7 +353,7 @@ describe('events-router', () => {
         expect(res.body).to.have.property('timestamp')
       })
     ).then( () => {
-      testGet(url, okStat, {
+      testGet(url, okStatus, {
             secret: rightSecret,
             channel: channel1,
             afterId: eventId
@@ -372,7 +372,7 @@ describe('events-router', () => {
 
   it(`@ ${url}: Valid GET and then POST before timeout on ${channel1}`, (done) => {
     let eventId
-    testPost(url, okStat, {
+    testPost(url, okStatus, {
           secret: rightSecret,
           channel: channel1
         }, done, (res) => {
@@ -382,7 +382,7 @@ describe('events-router', () => {
       eventId = res.body.id
       expect(res.body).to.have.property('timestamp')
     }).then( () => {
-      testGet(url, okStat, {
+      testGet(url, okStatus, {
             secret: rightSecret,
             channel: channel1,
             afterId: eventId
@@ -394,7 +394,7 @@ describe('events-router', () => {
         expect(res.body[0]).to.have.property('timestamp')
         done()
       })
-      testPost(url, okStat, {
+      testPost(url, okStatus, {
             secret: rightSecret,
             channel: channel1
           }, done, (res) => {

@@ -1,124 +1,110 @@
-( () => {
-
-'use strict'
-
 const {expect} = require('chai')
 const async = require('async')
 const lodash = require('lodash')
 const redis = require('fakeredis')
 const store = require('../src/redis.store')
+const utils = require('../src/utils')
+const first  = (a, b) => a
+const second = (a, b) => b
+
+describe('redis.store', () => {
+
+let redisClient
+const item = {}
+const DEFAULT_GROUP = group = 'group'
+
+beforeEach(done => {
+  redisClient = redis.createClient(0, 'localhost')
+  redisClient.flushdb(done)
+})
+
+afterEach(done => {
+  redisClient.flushdb(() => {
+    redisClient.quit()
+    done()
+  })
+})
+
+const itemFactory = (data, index) =>
+  Object.assign({}, data, { index })
+
+const addItem = (callback) => 
+  store.addItem(redisClient, item, group, itemFactory, callback)
 
 describe('Add Item', () => {
 
-  let client
-  let item = {}
-  let group = 'group'
-  let xform = (item, ndx) => {
-    item.ndx = ndx
-    return item
-  }
-  let resp = (item, ndx) => {
-    return item
-  }
-
-  before(done => {
-    client = redis.createClient(0, 'localhost')
-    client.flushdb()
-    done()
-  })
-
-  after(done => {
-    client.flushdb()
-    client.quit()
-    done()
-  })
-
-  it('should not return an error when client is not null or undefined', (done) => {
-    store.addItem(client, item, group, undefined, undefined, (err, msg) => {
-      expect(err).to.be.null
-      done()
-    })
-  })
-
-  it('should return an error when client is undefined', (done) => {
-    store.addItem(undefined, item, group, undefined, undefined, (err, msg) => {
+  it('should return an error when redisClient is undefined', (done) => {
+    store.addItem(undefined, item, group, undefined, (err, msg) => {
       expect(err).to.not.be.null
       done()
     })
   })
 
-  it('should return an error when client is null', (done) => {
-    store.addItem(null, item, group, undefined, undefined, (err, msg) => {
+  it('should return an error when redisClient is null', (done) => {
+    store.addItem(null, item, group, undefined, (err, msg) => {
       expect(err).to.not.be.null
       done()
     })
   })
 
-  it('should allow parallel use of the same client', (done) => {
-    client.flushdb()
-    const expects = (err, ndxs) => {
+  it('should succeed when redisClient is defined', (done) => {
+    store.addItem(redisClient, item, group, undefined, (err, msg) => {
       expect(err).to.be.null
-      expect(ndxs[0].ndx)
-        .to.not.equal(ndxs[1])
-        .to.not.equal(ndxs[2])
-        .to.not.equal(ndxs[3])
-      expect(ndxs[1].ndx)
-        .to.not.equal(ndxs[2])
-        .to.not.equal(ndxs[3])
-      expect(ndxs[2].ndx)
-        .to.not.equal(ndxs[3])
+      done()
+    })
+  })
+
+  it('should allow parallel use of the same redisClient', (done) => {
+    const expects = (err, indices) => {
+      expect(err).to.be.null
+      expect(indices[0].index)
+        .to.not.equal(indices[1])
+        .to.not.equal(indices[2])
+        .to.not.equal(indices[3])
+      expect(indices[1].index)
+        .to.not.equal(indices[2])
+        .to.not.equal(indices[3])
+      expect(indices[2].index)
+        .to.not.equal(indices[3])
       done()
     }
-    async.parallel([
-      store.addItem.bind(null, client, {}, group, undefined, undefined),
-      store.addItem.bind(null, client, {}, group, undefined, undefined),
-      store.addItem.bind(null, client, {}, group, undefined, undefined),
-      store.addItem.bind(null, client, {}, group, undefined, undefined),
-    ], expects)
+    async.parallel([ addItem, addItem, addItem, addItem ], expects)
   })
 
   it('should provide next index', (done) => {
-    client.flushdb()
-    const expects = (err, ndxs) => {
+    const expects = (err, indices) => {
       expect(err).to.be.null
-      expect(ndxs[1]).to.equal(ndxs[0] + 1)
+      expect(indices[1].index).to.equal(indices[0].index + 1)
       done()
     }
-    async.series([
-      store.addItem.bind(null, client, item, group, undefined, undefined),
-      store.addItem.bind(null, client, item, group, undefined, undefined),
-    ], expects)
+    const getIndex = second
+    async.series([ addItem, addItem ], expects)
   })
 
   it('should allow parallel use of the same item with transform', (done) => {
-    client.flushdb()
-    const expects = (err, ndxs) => {
+
+    const expects = (err, indices) => {
       expect(err).to.be.null
-      expect(ndxs[0].ndx)
-        .to.not.equal(ndxs[1].ndx)
-        .to.not.equal(ndxs[2].ndx)
-        .to.not.equal(ndxs[3].ndx)
-      expect(ndxs[1].ndx)
-        .to.not.equal(ndxs[2].ndx)
-        .to.not.equal(ndxs[3].ndx)
-      expect(ndxs[2].ndx)
-        .to.not.equal(ndxs[3].ndx)
+      expect(indices[0])
+        .to.not.equal(indices[1])
+        .to.not.equal(indices[2])
+        .to.not.equal(indices[3])
+      expect(indices[1])
+        .to.not.equal(indices[2])
+        .to.not.equal(indices[3])
+      expect(indices[2])
+        .to.not.equal(indices[3])
       done()
     }
-    async.parallel([
-      store.addItem.bind(null, client, item, group, xform, resp),
-      store.addItem.bind(null, client, item, group, xform, resp),
-      store.addItem.bind(null, client, item, group, xform, resp),
-      store.addItem.bind(null, client, item, group, xform, resp),
-    ], expects)
+
+    const getIndex = second
+    async.parallel([ addItem, addItem, addItem, addItem ], expects)
   })
 
 })
 
 describe('Get Items', () => {
 
-  let client
-  let group = 'group'
   let start = 1
   let format = (item) => {
     item['id'] = parseInt(item['id'])
@@ -126,39 +112,26 @@ describe('Get Items', () => {
     return item
   }
 
-  before(done => {
-    client = redis.createClient(0, 'localhost')
-    client.flushdb()
-    done()
+  it('should return an error when redisClient is undefined', (done) => {
+    store.getItems(undefined, group, start, (err, msg) => {
+      expect(err).to.not.be.null
+      done()
+    })
   })
 
-  after(done => {
-    client.flushdb()
-    client.quit()
-    done()
+  it('should return an error when redisClient is null', (done) => {
+    store.getItems(null, group, start, (err, msg) => {
+      expect(err).to.not.be.null
+      done()
+    })
   })
 
-  it('should not return an error when client is not null or undefined', (done) => {
-    store.getItems(client, group, start, undefined, (err, msg) => {
+  it('should succeed when redisClient is defined', (done) => {
+    store.getItems(redisClient, group, start, (err, msg) => {
       expect(err).to.be.null
       done()
     })
   })
 
-  it('should return an error when client is undefined', (done) => {
-    store.getItems(undefined, group, start, undefined, (err, msg) => {
-      expect(err).to.not.be.null
-      done()
-    })
-  })
-
-  it('should return an error when client is null', (done) => {
-    store.getItems(null, group, start, undefined, (err, msg) => {
-      expect(err).to.not.be.null
-      done()
-    })
-  })
-
 })
-
-})()
+})

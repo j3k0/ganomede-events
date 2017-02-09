@@ -1,26 +1,34 @@
 const {expect} = require('chai')
 const async = require('async')
 const redis = require('fakeredis')
-const store = require('../src/events.store')
+const eventsStore = require('../src/events.store')
 const utils = require('../src/utils')
 
 describe('events.store', () => {
 
-let redisClient
+let redisClient, store
 const event = {}
 const afterId = 0
 const channel = 'channel'
 
-const formatEvent = (item) => item
+const addEvent = (channel, event) => (callback) =>
+  store.addEvent(channel, event, callback)
 
-const addEvent = (callback, channel = 'channel') =>
-  store.addEvent(redisClient, event, channel, callback)
+addTwoEvents = (channel, event) => [
+  addEvent(channel, event), addEvent(channel, event) ]
 
-const getAllEvents = (callback, channel = 'channel') =>
-  store.getEventsAfterId(redisClient, channel, 0, callback)
+addThreeEvents = (channel, event) => [
+  addEvent(channel, event), addEvent(channel, event),
+  addEvent(channel, event) ]
+
+const loadEvents = (channel, id) => (callback) =>
+  store.loadEvents(channel, id, callback)
 
 beforeEach(done => {
   redisClient = redis.createClient(0, 'localhost')
+  // TODO: use a mockup
+  itemsStore = require('../src/redis.store').createStore({ redisClient })
+  store = eventsStore.createStore({ itemsStore })
   redisClient.flushdb(done)
 })
 
@@ -31,45 +39,45 @@ afterEach(done => {
   })
 })
 
-describe('Add Event', () => {
+describe('.addEvent', () => {
 
   it('should succeed when event is defined', (done) => {
-    store.addEvent(redisClient, event, channel, (err, msg) => {
+    store.addEvent(channel, event, (err, msg) => {
       expect(err).to.be.null
       done()
     })
   })
 
   it('should return an error when event is undefined', (done) => {
-    store.addEvent(redisClient, undefined, channel, (err, msg) => {
+    store.addEvent(channel, undefined, (err, msg) => {
       expect(err).to.not.be.null
       done()
     })
   })
 
   it('should return an error when event is null', (done) => {
-    store.addEvent(redisClient, null, channel, (err, msg) => {
+    store.addEvent(channel, null, (err, msg) => {
       expect(err).to.not.be.null
       done()
     })
   })
 
   it('should succeed when channel is a string', (done) => {
-    store.addEvent(redisClient, event, channel, (err, msg) => {
+    store.addEvent(channel, event, (err, msg) => {
       expect(err).to.be.null
       done()
     })
   })
 
   it('should return an error when channel is undefined', (done) => {
-    store.addEvent(redisClient, event, undefined, (err, msg) => {
+    store.addEvent(undefined, event, (err, msg) => {
       expect(err).to.not.be.null
       done()
     })
   })
 
   it('should return an error when channel is not a string', (done) => {
-    store.addEvent(redisClient, event, 0, (err, msg) => {
+    store.addEvent(0, event, (err, msg) => {
       expect(err).to.not.be.null
       done()
     })
@@ -84,23 +92,25 @@ describe('Add Event', () => {
       done()
     }
 
-    async.series([ addEvent, addEvent ], expects)
+    async.series(addTwoEvents(channel, event), expects);
   })
 
   it('should add events to an empty channel', (done) => {
     const expects = (err, res) => {
-      const events = res[2].map(formatEvent)
+      const events = res[2]
       expect(events).to.have.lengthOf(2)
       expect(events[0].id).to.equal(1)
       expect(events[1].id).to.equal(2)
       done()
     }
 
-    async.series([ addEvent, addEvent, getAllEvents ], expects)
+    async.series(
+      addTwoEvents(channel, event).concat(loadEvents(channel, 0)),
+      expects)
   })
 
   it('should add events to separate channels', (done) => {
-    let diffch = 'diff/channel'
+    let otherChannel = 'diff/channel'
     const expects = (err, res) => {
       const events = res[2]
       const otherEvents = res[3]
@@ -111,69 +121,69 @@ describe('Add Event', () => {
       done()
     }
     async.series([
-      store.addEvent.bind(null, redisClient, event, channel),
-      store.addEvent.bind(null, redisClient, event, diffch),
-      store.getEventsAfterId.bind(null, redisClient, channel, 0),
-      store.getEventsAfterId.bind(null, redisClient, diffch, 0),
+      addEvent(channel, event),
+      addEvent(otherChannel, event),
+      loadEvents(channel, 0),
+      loadEvents(otherChannel, 0),
     ], expects)
   })
 
 })
 
 
-describe('Get Events', () => {
+describe('.loadEvents', () => {
 
   it('should not return an error when channel is a string', (done) => {
-    store.getEventsAfterId(redisClient, channel, afterId, (err, msg) => {
+    store.loadEvents(channel, afterId, (err, msg) => {
       expect(err).to.be.null
       done()
     })
   })
 
   it('should return an error when channel is undefined', (done) => {
-    store.getEventsAfterId(redisClient, undefined, afterId, (err, msg) => {
+    store.loadEvents(undefined, afterId, (err, msg) => {
       expect(err).to.not.be.null
       done()
     })
   })
 
   it('should return an error when channel is not a string', (done) => {
-    store.getEventsAfterId(redisClient, 0, afterId, (err, msg) => {
+    store.loadEvents(0, afterId, (err, msg) => {
       expect(err).to.not.be.null
       done()
     })
   })
 
   it('should not return an error when after ID is a number', (done) => {
-    store.getEventsAfterId(redisClient, channel, afterId, (err, msg) => {
+    store.loadEvents(channel, afterId, (err, msg) => {
       expect(err).to.be.null
       done()
     })
   })
 
   it('should not return an error when after ID is string parseable to number', (done) => {
-    store.getEventsAfterId(redisClient, channel, '1', (err, msg) => {
+    store.loadEvents(channel, '1', (err, msg) => {
       expect(err).to.be.null
       done()
     })
   })
 
   it('should not return an error when after ID is undefined', (done) => {
-    store.getEventsAfterId(redisClient, channel, undefined, (err, msg) => {
+    store.loadEvents(channel, undefined, (err, msg) => {
       expect(err).to.be.null
       done()
     })
   })
 
   it('should return an error when after ID is not valid', (done) => {
-    store.getEventsAfterId(redisClient, channel, 'true', (err, msg) => {
+    store.loadEvents(channel, 'true', (err, msg) => {
       expect(err).to.not.be.null
       done()
     })
   })
 
   it('should return no event from empty channel', (done) => {
-    store.getEventsAfterId(redisClient, channel, afterId, (err, events) => {
+    store.loadEvents(channel, afterId, (err, events) => {
       expect(events).to.have.lengthOf(0)
       done()
     })
@@ -181,31 +191,30 @@ describe('Get Events', () => {
 
   it('should return all events from a channel', (done) => {
     const expects = (err, res) => {
-      const events = res[2].map(formatEvent)
+      const events = res[2]
       expect(events).to.have.lengthOf(2)
       expect(events[0].id).to.equal(1)
       expect(events[1].id).to.equal(2)
       done()
     }
-    async.series([
-      store.addEvent.bind(null, redisClient, event, channel),
-      store.addEvent.bind(null, redisClient, event, channel),
-      store.getEventsAfterId.bind(null, redisClient, channel, afterId),
-    ], expects)
+    async.series(
+      addTwoEvents(channel, event)
+        .concat(loadEvents(channel, afterId))
+      , expects)
   })
 
   it('should return events only from own channel', (done) => {
     const otherChannel = 'diff/channel'
     const expects = (err, res) => {
-      const events = res[2].map(formatEvent)
+      const events = res[2]
       expect(events).to.have.lengthOf(1)
       expect(events[0].id).to.equal(1)
       done()
     }
     async.series([
-      store.addEvent.bind(null, redisClient, event, channel),
-      store.addEvent.bind(null, redisClient, event, otherChannel),
-      store.getEventsAfterId.bind(null, redisClient, channel, afterId),
+      addEvent(channel, event),
+      addEvent(otherChannel, event),
+      loadEvents(channel, afterId),
     ], expects)
   })
 
@@ -215,12 +224,10 @@ describe('Get Events', () => {
       expect(events).to.have.lengthOf(0)
       done()
     }
-    async.series([
-      store.addEvent.bind(null, redisClient, event, channel),
-      store.addEvent.bind(null, redisClient, event, channel),
-      store.addEvent.bind(null, redisClient, event, channel),
-      store.getEventsAfterId.bind(null, redisClient, channel, 3),
-    ], expects)
+    async.series(
+      addThreeEvents(channel, event)
+        .concat(loadEvents(channel, 3)),
+      expects)
   })
 
   it('should return no event if after ID is beyond last event', (done) => {
@@ -228,12 +235,10 @@ describe('Get Events', () => {
       expect(res[3]).to.have.lengthOf(0)
       done()
     }
-    async.series([
-      store.addEvent.bind(null, redisClient, event, channel),
-      store.addEvent.bind(null, redisClient, event, channel),
-      store.addEvent.bind(null, redisClient, event, channel),
-      store.getEventsAfterId.bind(null, redisClient, channel, 4),
-    ], expects)
+    async.series(
+      addThreeEvents(channel, event)
+        .concat(loadEvents(channel, 4)),
+      expects)
   })
 
   it('should return only events after the given ID', (done) => {
@@ -244,12 +249,10 @@ describe('Get Events', () => {
       expect(events[1].id).to.equal(3)
       done()
     }
-    async.series([
-      store.addEvent.bind(null, redisClient, event, channel),
-      store.addEvent.bind(null, redisClient, event, channel),
-      store.addEvent.bind(null, redisClient, event, channel),
-      store.getEventsAfterId.bind(null, redisClient, channel, 1),
-    ], expects)
+    async.series(
+      addThreeEvents(channel, event)
+        .concat(loadEvents(channel, 1)),
+      expects)
   })
 
 })

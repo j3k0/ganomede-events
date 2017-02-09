@@ -1,16 +1,13 @@
 const async = require('async')
-const store = require('./redis.store')
 const utils = require('./utils')
 const identity = (x) => x
 
-// Constants
-const idProp = 'id'
-const timeProp = 'timestamp'
-const dataProp = 'data'
-
-const invalidEvent = 'invalid event'
-const invalidChannel = 'invalid channel'
-const invalidAfterId = 'invalid after ID'
+// Error codes
+const errors = {
+  invalidEvent: 'invalid event',
+  invalidChannel: 'invalid channel',
+  invalidAfterId: 'invalid after ID'
+}
 
 const isValidEvent = (event) =>
   typeof event === 'object' && event !== null
@@ -18,68 +15,84 @@ const isValidEvent = (event) =>
 const isValidChannel = (channel) =>
   typeof channel === 'string'
 
-const eventData = (eventData) =>
-  eventData ? { data: JSON.stringify(eventData) } : {}
-
-const eventBase = (index, timestamp) => ({
-  id: index,
-  timestamp
-})
-
-const eventFactory = (data, index) =>
-  Object.assign({}, data,
-  eventBase(index, new Date().getTime()),
-  eventData(data.data))
-
-const addEvent = (redisClient, event, channel, callback) => {
-
-  if (!isValidEvent(event))
-    return callback(invalidEvent)
-  if (!isValidChannel(channel))
-    return callback(invalidChannel)
-
-  store.addItem(redisClient, event, channel, eventFactory, callback)
-}
-
 const isValidAfterId = (after) => {
   return after === undefined ||
     typeof after === 'number' || 
     typeof after === 'string' && !isNaN(parseInt(after))
 }
 
-const formatEventCore = (event) => ({
-  id: parseInt(event.id),
-  timestamp: parseInt(event.timestamp)
-})
+// Initializes an events store.
+// 
+// depends upon an `itemsStore`,  an object with the following methods:
+//
+//    - loadItems(channel, id, callback)
+//    - addItem(channel, event, itemFactory, callback)
+//
+// (see redis.store.js for a redis implementation of an item store)
+//
+const createStore = ({
+  itemsStore
+}) => {
 
-const formatEventData = (eventData) =>
-  eventData ? { data: JSON.parse(eventData) } : {}
+return {
 
-const formatEvent = (event) => Object.assign({},
-  formatEventCore(event),
-  formatEventData(event.data))
+  // Store a new event in a channel
+  addEvent: (channel, event, callback) => {
 
-const getEventsAfterId = (redisClient, channel, id, callback) => {
+    if (!isValidEvent(event))
+      return callback(new Error(errors.invalidEvent))
 
-  callback = callback || identity
+    if (!isValidChannel(channel))
+      return callback(new Error(errors.invalidChannel))
 
-  if (!isValidChannel(channel))
-    return callback(new Error(invalidChannel))
+    const itemFactory = (data, index) =>
+      Object.assign({}, data,
+      itemBase(index, new Date().getTime()),
+      itemData(data.data))
 
-  if (!isValidAfterId(id))
-    return callback(new Error(invalidAfterId))
+    const itemData = (eventData) =>
+      eventData ? { data: JSON.stringify(eventData) } : {}
 
-  const done = (err, items) => err
-    ? callback(err)
-    : callback(null, items.map(formatEvent))
+    const itemBase = (index, timestamp) => ({
+      id: index,
+      timestamp
+    })
 
-  store.getItems(redisClient, channel, id, done)
-}
+    itemsStore.addItem(channel, event, itemFactory, callback)
+  },
+
+  // Retrieve all events from a channel, with ids bigger than the given one
+  loadEvents: (channel, id, callback) => {
+
+    callback = callback || identity
+
+    if (!isValidChannel(channel))
+      return callback(new Error(errors.invalidChannel))
+
+    if (!isValidAfterId(id))
+      return callback(new Error(errors.invalidAfterId))
+
+    const formatEvent = (event) => Object.assign({},
+      formatEventCore(event),
+      formatEventData(event.data))
+
+    const formatEventCore = (event) => ({
+      id: parseInt(event.id),
+      timestamp: parseInt(event.timestamp)
+    })
+
+    const formatEventData = (eventData) =>
+      eventData ? { data: JSON.parse(eventData) } : {}
+
+    const done = (err, items) => err
+      ? callback(err)
+      : callback(null, items.map(formatEvent))
+
+    itemsStore.loadItems(channel, id, done)
+  }
+}}
 
 module.exports = {
-  invalidEvent,
-  invalidChannel,
-  invalidAfterId,
-  addEvent,
-  getEventsAfterId,
+  createStore,
+  errors
 }

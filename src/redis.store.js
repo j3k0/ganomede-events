@@ -8,24 +8,27 @@ const identity = (x) => x
 const INDICES = 'indices'
 const KEYS = 'keys'
 
-const invalidClient = 'invalid redisClient'
+const errors = {
+  invalidClient: 'invalid redisClient'
+}
 
 const key = (group, tag) => `${group}:${tag}`
-
 const isRedisClient = (redisClient) =>
   typeof redisClient === 'object' && redisClient !== null
 
-/*
- * - serializer
- *    Function that transforms the item to be added prior to pushing to database.
- *    This is used in case the item needs the index provided.
- */
-const addItem = (redisClient, data, group, itemFactory, callback) => {
+const createStore = ({
+  redisClient
+}) => ({
 
-  itemFactory = itemFactory || identity
+/*
+ * - itemFactory: Function(data, index)
+ *    Function that initializes the data to be added to database.
+ *    It is provided with the data itself and index of the item.
+ */
+addItem: (group, data, itemFactory, callback) => {
 
   if (!isRedisClient(redisClient))
-    return callback(new Error(invalidClient))
+    return callback(new Error(errors.invalidClient))
 
   const incrIndex = (callback) =>
     redisClient.incr(key(group, INDICES), callback)
@@ -43,12 +46,12 @@ const addItem = (redisClient, data, group, itemFactory, callback) => {
   }
 
   async.waterfall([ incrIndex, pushItem ], callback)
-}
+},
 
-const getItems = (redisClient, group, start, callback) => {
+loadItems: (group, start, callback) => {
 
   if (!isRedisClient(redisClient))
-    return callback(new Error(invalidClient))
+    return callback(new Error(errors.invalidClient))
 
   const retrieveKeys = (callback) =>
     redisClient.zrangebyscore(key(group, KEYS),
@@ -65,9 +68,9 @@ const getItems = (redisClient, group, start, callback) => {
     pullAllItems
   ], callback)
 }
+})
 
 module.exports = {
-  invalidClient,
-  addItem,
-  getItems,
+  errors,
+  createStore
 }

@@ -38,12 +38,15 @@ For specific setup, you can configure using environment variables:
  - `export API_SECRET="my-api-secret-token"`
  - `export REDIS_EVENTS_PORT_6379_TCP_ADDR="192.168.1.4"`
  - `export REDIS_EVENTS_PORT_6379_TCP_PORT="34009"`
+ - `export POLL_TIMEOUT="30000"`
 
 You can also start a server from the public docker image:
 
 ```sh
 docker run -p 8000:8000 --link redis_events:redis_events ganomede/events
 ```
+
+You can also play around with provided `docker-compose.yml` and `Dockerfile`.
 
 ### Library
 

@@ -1,0 +1,18 @@
+users:
+    build: .
+    dockerfile: Dockerfile
+    command: node index.js
+    volumes:
+     - ./src:/home/app/code/src
+     - ./tests:/home/app/code/tests
+    links:
+     - redis:redis_events
+    environment:
+     - "API_SECRET=1234"
+    ports:
+     - "8011:8000"
+
+redis:
+    image: tutum/redis:latest
+    environment:
+     - "REDIS_PASS=**None**"

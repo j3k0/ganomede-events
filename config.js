@@ -40,16 +40,11 @@ module.exports = {
     prefix: `/${pkg.api}`
   },
 
-  data: {
-    host: process.env.DATA_PORT_8080_TCP_ADDR || 'localhost',
-    port: parseInt(process.env.DATA_PORT_8080_TCP_PORT, 10) || 8080
-  },
-
   redis: {
     host: process.env.REDIS_EVENTS_PORT_6379_TCP_ADDR || 'localhost',
     port: +process.env.REDIS_EVENTS_PORT_6379_TCP_PORT || 6379
   },
 
   secret: process.env.API_SECRET,
-  pollTimeout: 5000
+  pollTimeout: +process.env.POLL_TIMEOUT || 5000
 };

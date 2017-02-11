@@ -3,7 +3,7 @@
 const restify = require('restify');
 const logger = require('./logger');
 
-module.exports = ({ handleUncaughtExceptions = true } = {}) => {
+module.exports = ({handleUncaughtExceptions = true} = {}) => {
   const server = restify.createServer({
     handleUncaughtExceptions,
     log: logger

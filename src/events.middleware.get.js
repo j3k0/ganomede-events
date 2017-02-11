@@ -1,3 +1,5 @@
+'use strict';
+
 // restify middleware that loads and outputs events
 // from a given channel
 //
@@ -11,9 +13,9 @@
 // Reponds with a JSON array of events (see README.md)
 //
 
-const eventsStore = require('./events.store')
-const utils = require('./utils')
-const restify = require('restify')
+const eventsStore = require('./events.store');
+const utils = require('./utils');
+const restify = require('restify');
 
 const createMiddleware = ({
   poll = require('./poll'),
@@ -22,16 +24,16 @@ const createMiddleware = ({
   store
 }) => (req, res, next) => {
 
-  const { channel, after } = req.params
-  const afterId = utils.zeroIfNaN(after)
+  const {channel, after} = req.params;
+  const afterId = utils.zeroIfNaN(after);
 
   if (!channel)
-    return next(new restify.InvalidContentError('channel missing'))
+    return next(new restify.InvalidContentError('channel missing'));
 
   const json = (data) => {
-    res.json(data)
-    next()
-  }
+    res.json(data);
+    next();
+  };
 
   // Process the outcome of store.loadEvents,
   // returns true iff the middleware's job is over (next was called).
@@ -42,7 +44,7 @@ const createMiddleware = ({
       return json(events), true;
     else
       return false;
-  }
+  };
 
   // Process the outcome of poll.listen
   //  - when a new message is received,
@@ -51,8 +53,8 @@ const createMiddleware = ({
   //         -> output an empty array
   const processPoll = (err, message) => {
     if (err) {
-      log.error(err)
-      next(new restify.InternalServerError('polling failed'))
+      log.error(err);
+      next(new restify.InternalServerError('polling failed'));
     }
     else {
       if (message > afterId)
@@ -60,22 +62,25 @@ const createMiddleware = ({
       else
         json([]); // timeout is not an error but expected behavior
     }
-  }
+  };
 
   const pollEvents = () =>
     poll.listen(channel, processPoll);
 
-  store.loadEvents(channel, afterId, (err, events) =>
-    processLoad(err, events, 1) || pollEvents())
-}
+  store.loadEvents(channel, afterId, (err, events) => {
+    return processLoad(err, events, 1) || pollEvents();
+  });
+};
 
-const convertError = (err) =>
-  isInvalidContent(err)
+const convertError = (err) => {
+  return isInvalidContent(err)
     ? new restify.InvalidContentError(err.message)
-    : err
+    : err;
+};
 
-const isInvalidContent = (err) =>
-  err && (err.message === eventsStore.errors.invalidChannel
-    || err.message === eventsStore.errors.invalidAfterId)
+const isInvalidContent = (err) => {
+  return err && (err.message === eventsStore.errors.invalidChannel
+    || err.message === eventsStore.errors.invalidAfterId);
+};
 
-module.exports = { createMiddleware }
+module.exports = {createMiddleware};

@@ -40,7 +40,7 @@ addItem: (group, data, itemFactory, callback) => {
     const done = (err) => callback(err, item)
 
     redisClient.multi()
-      .hmset(hashKey, item)
+      .set(hashKey, JSON.stringify(item))
       .zadd(sortKey, index, hashKey)
       .exec(done)
   }
@@ -57,16 +57,20 @@ loadItems: (group, start, callback) => {
     redisClient.zrangebyscore(key(group, KEYS),
       utils.addOne(start), '+inf', callback)
 
-  const pullEachItem = (key, callback) =>
-    redisClient.hgetall(key, callback)
-
   const pullAllItems = (keys, callback) =>
-    async.map(keys, pullEachItem, callback)
+    keys.length > 0
+      ? redisClient.mget(keys, callback)
+      : callback(null, []);
 
   async.waterfall([
     retrieveKeys,
     pullAllItems
-  ], callback)
+  ], (err, items) => {
+    try {
+      items = items.map(JSON.parse);
+    } catch (e) {}
+    callback(err, items);
+  })
 }
 })
 

@@ -17,7 +17,6 @@ const createMiddleware = ({
   store
 }) => (req, res, next) => {
 
-  log.info({body: req.body});
   const channel = req.body.channel
   const event = _.pick(req.body, 'from', 'type', 'data')
 

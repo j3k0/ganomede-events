@@ -45,17 +45,12 @@ return {
     if (!isValidChannel(channel))
       return callback(new Error(errors.invalidChannel))
 
-    const itemFactory = (data, index) =>
-      Object.assign({}, data,
-      itemBase(index, new Date().getTime()),
-      itemData(data.data))
-
-    const itemData = (eventData) =>
-      eventData ? { data: JSON.stringify(eventData) } : {}
-
-    const itemBase = (index, timestamp) => ({
+    const itemFactory = (data, index) => ({
       id: index,
-      timestamp
+      timestamp: new Date().getTime(),
+      from: data.from,
+      type: data.type,
+      data: data.data
     })
 
     itemsStore.addItem(channel, event, itemFactory, callback)
@@ -72,17 +67,13 @@ return {
     if (!isValidAfterId(id))
       return callback(new Error(errors.invalidAfterId))
 
-    const formatEvent = (event) => Object.assign({},
-      formatEventCore(event),
-      formatEventData(event.data))
-
-    const formatEventCore = (event) => ({
+    const formatEvent = (event) => ({
       id: parseInt(event.id),
-      timestamp: parseInt(event.timestamp)
-    })
-
-    const formatEventData = (eventData) =>
-      eventData ? { data: JSON.parse(eventData) } : {}
+      timestamp: parseInt(event.timestamp),
+      type: event.type,
+      from: event.from,
+      data: event.data
+    });
 
     const done = (err, items) => err
       ? callback(err)

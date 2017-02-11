@@ -10,9 +10,8 @@ const loggingCallback = (callback, error, message) => {
   typeof callback === 'function' && callback(error, message)
 }
 
-const messageCallback = (callback, error, message) => {
-  typeof callback === 'function' && callback(error, message)
-}
+const messageCallback = (callback, error, message) =>
+  callback && callback(error, message)
 
 const customCallback = (callback, custom, error) => {
   typeof callback === 'function' && callback(error, custom)
@@ -28,7 +27,7 @@ const objectToString = (data) => {
 }
 
 const zeroIfNaN = (data) => {
-  let intdata = parseInt(data)
+  const intdata = parseInt(data)
   return isNaN(intdata) ? 0 : intdata
 }
 
@@ -40,6 +39,16 @@ const nopIfNotFunction = (data) => {
   return defaultIfNotFunction(data, () => {})
 }
 
+const addOne = (data) =>
+  data !== undefined ? zeroIfNaN(data) + 1 : 1
+
+const debug = (func, label) => (...args) => {
+  console.log("calling " + (label || func.name) + " with arguments:")
+  console.log(args)
+  return func.apply(this, args)
+}
+
+
 module.exports = {
   loggingCallback,
   messageCallback,
@@ -49,6 +58,8 @@ module.exports = {
   zeroIfNaN,
   defaultIfNotFunction,
   nopIfNotFunction,
+  addOne,
+  debug
 }
 
 })()

@@ -1,75 +1,96 @@
-( () => {
-
 'use strict'
 
-const {expect} = require('chai')
-const async = require('async')
-const redis = require('fakeredis')
-const poll = require('../src/poll')
+const {expect} = require('chai');
+const async = require('async');
+const redis = require('redis');
+const {createPoll} = require('../src/poll');
+const td = require('testdouble');
+const {verify, when} = td;
+const {anything, isA} = td.matchers;
+const calledOnce = {times: 1, ignoreExtraArgs: true};
 
-describe('Add Polling', () => {
+describe('poll', () => {
 
-  let pub, sub
-  let delay = 300
-  let channel = 'channel'
-  let message = 'message'
+  let CHANNEL = 'channel';
+  let MESSAGE = 'message';
+  let POLL_TIMEOUT = 321;
+  let TIMEOUT_ID = 1;
+  let callback;
+  let log;
+  let poll;
+  let pubsub;
+  let setTimeout;
+  let clearTimeout;
 
-  before(done => {
-    pub = redis.createClient(0, 'localhost')
-    sub = redis.createClient(0, 'localhost')
-    done()
+  beforeEach(() => {
+    callback = td.function('callback');
+    pubsub = td.object(['subscribe', 'publish', 'unsubscribe']);
+    setTimeout = td.function('setTimeout');
+    clearTimeout = td.function('clearTimeout');
+    log = td.object(['error']);
+    poll = createPoll({
+      pubsub,
+      log,
+      setTimeout,
+      clearTimeout,
+      pollTimeout: POLL_TIMEOUT
+    });
   })
 
-  after(done => {
-    pub.quit()
-    sub.quit()
-    done()
-  })
+  describe('.emit', () => {
 
-  it('should be triggerable', (done) => {
-    const expects = (err, msgs) => {
-      expect(err).to.be.null
-    }
-    const trigger = (ch, msg, clear) => {
-      expect(ch).to.be.equal(channel)
-      expect(msg).to.be.equal(message)
-      clear()
-      done()
-    }
-    const timeout = (unsub) => {
-      expect(unsub).to.be.null // should not be here
-      unsub()
-      done()
-    }
-    async.series([
-      poll.add.bind(null, sub, channel, delay, trigger, timeout),
-      poll.trigger.bind(null, pub, channel, message),
-    ], expects)
-  })
+    it('publishes the message', () => {
+      poll.emit(CHANNEL, MESSAGE, callback);
+      verify(pubsub.publish(CHANNEL, MESSAGE, isA(Function)));
+    });
+  });
 
-  it('should timeout', (done) => {
-    const sleep = (ms) => {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    }
-    const expects = (err, msgs) => {
-      expect(err).to.be.null
-    }
-    const trigger = (ch, msg, clear) => {
-      expect(clear).to.be.null // should not be here
-      clear()
-      done()
-    }
-    const timeout = (unsub) => {
-      unsub()
-      done()
-    }
-    async.series([
-      poll.add.bind(null, sub, channel, delay, trigger, timeout),
-      sleep.bind(null, delay),
-      poll.trigger.bind(null, pub, channel, message),
-    ], expects)
-  })
+  describe('.listen', () => {
 
-})
+    it('subscribes a handler to pubsub', () => {
+      poll.listen(CHANNEL, callback);
+      verify(pubsub.subscribe(CHANNEL, isA(Function), isA(Function)));
+    });
 
-})()
+    it('adds a timeout', () => {
+      poll.listen(CHANNEL, callback);
+      verify(setTimeout(isA(Function), POLL_TIMEOUT));
+    });
+
+    it('reports a null message on timeout', (done) => {
+      when(setTimeout(isA(Function), isA(Number)))
+        .thenDo((cb) => {
+          setImmediate(cb);
+          return TIMEOUT_ID;
+        });
+      poll.listen(CHANNEL, callback);
+      setImmediate(() => {
+        verify(callback(null, null));
+        // and cleanup is done
+        verify(clearTimeout(TIMEOUT_ID));
+        verify(pubsub.unsubscribe(CHANNEL, isA(Function), isA(Function)));
+        verify(callback(), calledOnce);
+        done();
+      });
+    });
+
+    it('reports channel messages', (done) => {
+      when(pubsub.subscribe(CHANNEL, isA(Function), isA(Function)))
+        .thenDo((_, cb) => {
+          setImmediate(() => cb(MESSAGE));
+        });
+      when(setTimeout(isA(Function), isA(Number)))
+        .thenReturn(TIMEOUT_ID);
+      poll.listen(CHANNEL, callback);
+      setImmediate(() => {
+        verify(callback(null, MESSAGE));
+        // and cleanup is done
+        verify(clearTimeout(TIMEOUT_ID));
+        verify(pubsub.unsubscribe(CHANNEL, isA(Function), isA(Function)));
+        verify(callback(), calledOnce);
+        done();
+      });
+    });
+
+  });
+});

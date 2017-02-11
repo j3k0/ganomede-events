@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 const {expect} = require('chai');
 const async = require('async');
@@ -11,10 +11,10 @@ const calledOnce = {times: 1, ignoreExtraArgs: true};
 
 describe('poll', () => {
 
-  let CHANNEL = 'channel';
-  let MESSAGE = 'message';
-  let POLL_TIMEOUT = 321;
-  let TIMEOUT_ID = 1;
+  const CHANNEL = 'channel';
+  const MESSAGE = 'message';
+  const POLL_TIMEOUT = 321;
+  const TIMEOUT_ID = 1;
   let callback;
   let log;
   let poll;
@@ -35,7 +35,7 @@ describe('poll', () => {
       clearTimeout,
       pollTimeout: POLL_TIMEOUT
     });
-  })
+  });
 
   describe('.emit', () => {
 

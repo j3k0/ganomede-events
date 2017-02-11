@@ -46,7 +46,7 @@ const child = () => {
   const server = createServer();
 
   // Clients
-  const redisClient = redis.createClient(config.redis.port, config.redis.host)
+  const redisClient = redis.createClient(config.redis.port, config.redis.host);
 
   const eventsRouter = events(config.http.prefix, server, redisClient);
   about(config.http.prefix, server);

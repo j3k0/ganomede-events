@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 const restify = require('restify');
 const utils = require('./utils');
@@ -30,11 +30,11 @@ const removeSecret = (req) => {
 };
 
 const checkSecret = (req, res, next) => {
-  let data = getParams(req);
-  let err  = getError(data);
+  const data = getParams(req);
+  const err = getError(data);
   removeSecret(req);
   if (err)
-    logger.error(err, "checkSecret failed");
+    logger.error(err, 'checkSecret failed');
   next(err);
 };
 

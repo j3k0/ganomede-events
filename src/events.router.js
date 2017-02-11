@@ -17,9 +17,9 @@ const router = (prefix, server, redisClient) => {
   const poll = createPoll({pubsub});
 
   const getEvents = require('./events.middleware.get')
-    .createMiddleware({ store, poll });
+    .createMiddleware({store, poll});
   const postEvent = require('./events.middleware.post')
-    .createMiddleware({ store, poll });
+    .createMiddleware({store, poll});
 
   server.post(`${prefix}/events`,
     secret.checkSecret, postEvent);
@@ -31,7 +31,7 @@ const router = (prefix, server, redisClient) => {
       async.parallel([
         (cb) => redisPubClient.quit(cb),
         (cb) => redisSubClient.quit(cb)
-      ], cb)
+      ], cb);
     }
   };
 };

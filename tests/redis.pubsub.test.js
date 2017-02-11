@@ -103,7 +103,7 @@ describe('redis.pubsub', () => {
     let redisPubClient;
     let redisSubClient;
 
-    before(function(done) {
+    before(function (done) {
       const retry_strategy = (options) =>
         new Error('skip-test');
       redisPubClient = redis.createClient({retry_strategy});
@@ -113,7 +113,7 @@ describe('redis.pubsub', () => {
       });
       redisPubClient.info((err) => {
         // Connection to redis failed, skipping integration tests.
-        if (err && err.origin && err.origin.message === "skip-test")
+        if (err && err.origin && err.origin.message === 'skip-test')
           this.skip();
         else
           done();
@@ -146,7 +146,7 @@ describe('redis.pubsub', () => {
         pubsub.publish.bind(null, OK_CHANNEL, OK_MESSAGE),
         pubsub.publish.bind(null, FAIL_CHANNEL, OK_MESSAGE),
         // make sure subscribers were called...
-        setTimeout.bind(null, (cb) => {cb()}, 10)
+        setTimeout.bind(null, (cb) => {cb();}, 10)
       ])
 
       // Unsubscribe some from OK_CHANNEL
@@ -157,7 +157,7 @@ describe('redis.pubsub', () => {
       .concat([
         pubsub.publish.bind(null, OK_CHANNEL, OK_MESSAGE),
         // make sure subscribers were called...
-        setTimeout.bind(null, (cb) => {cb()}, 10)
+        setTimeout.bind(null, (cb) => {cb();}, 10)
       ]);
 
       async.series(ops, (err, results) => {

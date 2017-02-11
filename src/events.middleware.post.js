@@ -1,3 +1,5 @@
+'use strict';
+
 // restify middleware that adds an event to a channel
 //
 // Request body is JSON with fields:
@@ -45,9 +47,10 @@ const isInvalidContent = (err) =>
   err === eventsStore.errors.invalidEvent ||
   err === eventsStore.errors.invalidChannel;
 
-const convertError = (err) =>
-  isInvalidContent(err)
+const convertError = (err) => {
+  return isInvalidContent(err)
     ? new restify.InvalidContentError(err.message)
     : err;
+};
 
 module.exports = {createMiddleware};

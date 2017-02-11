@@ -1,7 +1,6 @@
+'use strict';
+
 (() => {
-
-  'use strict';
-
   const logger = require('./logger');
 
 // Callbacks
@@ -39,12 +38,15 @@
     return defaultIfNotFunction(data, () => {});
   };
 
-  const addOne = (data) =>
-  data !== undefined ? zeroIfNaN(data) + 1 : 1;
+  const addOne = (data) => {
+    return data !== undefined ? zeroIfNaN(data) + 1 : 1;
+  };
 
   const debug = (func, label) => (...args) => {
+    /* eslint-disable no-console */
     console.log('calling ' + (label || func.name) + ' with arguments:');
     console.log(args);
+    /* eslint-enable no-console */
     return func.apply(this, args);
   };
 

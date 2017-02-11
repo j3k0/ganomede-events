@@ -1,3 +1,5 @@
+'use strict';
+
 const async = require('async');
 const secret = require('./secret');
 const eventsStore = require('./events.store');

@@ -1,12 +1,9 @@
 'use strict';
 
-const {expect} = require('chai');
-const async = require('async');
-const redis = require('redis');
 const {createPoll} = require('../src/poll');
 const td = require('testdouble');
 const {verify, when} = td;
-const {anything, isA} = td.matchers;
+const {isA} = td.matchers;
 const calledOnce = {times: 1, ignoreExtraArgs: true};
 
 describe('poll', () => {

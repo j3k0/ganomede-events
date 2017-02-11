@@ -1,7 +1,6 @@
+'use strict';
+
 (() => {
-
-  'use strict';
-
   const {expect} = require('chai');
   const supertest = require('supertest');
   const createServer = require('../src/server');
@@ -46,25 +45,6 @@
       });
     };
 
-    const testGetTimeout = (url, timeout, params, done, endExpect) => {
-      return supertest(server)
-      .get(url)
-      .query({
-        secret: params.secret,
-        channel: params.channel,
-        after: params.afterId
-      })
-      .timeout(timeout)
-      .then((res) => {
-        expect(res).to.be.null;
-      }, (err) => {
-        endExpect && endExpect(err);
-      })
-      .catch((error) => {
-        done(error);
-      });
-    };
-
     const testPost = (url, status, params, done, endExpect) => {
       return supertest(server)
       .post(url)
@@ -92,7 +72,6 @@
     const wrongSecret = 'wrong';
     const channel1 = 'channel1';
     const channel2 = 'channel2';
-    const getTimeout = 1000;
 
   // expectations
     const okStatus = 200;

@@ -1,12 +1,14 @@
+'use strict';
+
 const {expect} = require('chai');
 const async = require('async');
 const redis = require('fakeredis');
 const eventsStore = require('../src/events.store');
-const utils = require('../src/utils');
 
 describe('events.store', () => {
 
-  let redisClient, store;
+  let redisClient;
+  let store;
   const event = {};
   const afterId = 0;
   const channel = 'channel';
@@ -14,10 +16,10 @@ describe('events.store', () => {
   const addEvent = (channel, event) => (callback) =>
   store.addEvent(channel, event, callback);
 
-  addTwoEvents = (channel, event) => [
+  const addTwoEvents = (channel, event) => [
     addEvent(channel, event), addEvent(channel, event)];
 
-  addThreeEvents = (channel, event) => [
+  const addThreeEvents = (channel, event) => [
     addEvent(channel, event), addEvent(channel, event),
     addEvent(channel, event)];
 
@@ -27,7 +29,7 @@ describe('events.store', () => {
   beforeEach(done => {
     redisClient = redis.createClient(0, 'localhost');
   // TODO: use a mockup
-    itemsStore = require('../src/redis.store').createStore({redisClient});
+    const itemsStore = require('../src/redis.store').createStore({redisClient});
     store = eventsStore.createStore({itemsStore});
     redisClient.flushdb(done);
   });

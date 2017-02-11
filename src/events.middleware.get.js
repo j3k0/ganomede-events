@@ -1,3 +1,5 @@
+'use strict';
+
 // restify middleware that loads and outputs events
 // from a given channel
 //
@@ -65,17 +67,20 @@ const createMiddleware = ({
   const pollEvents = () =>
     poll.listen(channel, processPoll);
 
-  store.loadEvents(channel, afterId, (err, events) =>
-    processLoad(err, events, 1) || pollEvents());
+  store.loadEvents(channel, afterId, (err, events) => {
+    return processLoad(err, events, 1) || pollEvents();
+  });
 };
 
-const convertError = (err) =>
-  isInvalidContent(err)
+const convertError = (err) => {
+  return isInvalidContent(err)
     ? new restify.InvalidContentError(err.message)
     : err;
+};
 
-const isInvalidContent = (err) =>
-  err && (err.message === eventsStore.errors.invalidChannel
+const isInvalidContent = (err) => {
+  return err && (err.message === eventsStore.errors.invalidChannel
     || err.message === eventsStore.errors.invalidAfterId);
+};
 
 module.exports = {createMiddleware};

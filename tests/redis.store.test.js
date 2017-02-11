@@ -1,18 +1,17 @@
+'use strict';
+
 const {expect} = require('chai');
 const async = require('async');
-const lodash = require('lodash');
 const redis = require('fakeredis');
 const redisStore = require('../src/redis.store');
-const utils = require('../src/utils');
-const first = (a, b) => a;
-const second = (a, b) => b;
 
 describe('redis.store', () => {
 
-  let redisClient, store;
+  let redisClient;
+  let store;
   const item = {};
   const start = 1;
-  const DEFAULT_GROUP = group = 'group';
+  const group = 'group';
 
   beforeEach(done => {
     redisClient = redis.createClient(0, 'localhost');
@@ -58,7 +57,6 @@ describe('redis.store', () => {
         expect(indices[1].index).to.equal(indices[0].index + 1);
         done();
       };
-      const getIndex = second;
       async.series([addItem, addItem], expects);
     });
 

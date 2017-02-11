@@ -1,5 +1,5 @@
-const async = require('async');
-const utils = require('./utils');
+'use strict';
+
 const identity = (x) => x;
 
 // Error codes
@@ -75,9 +75,11 @@ const createStore = ({
         data: event.data
       });
 
-      const done = (err, items) => err
-      ? callback(err)
-      : callback(null, items.map(formatEvent));
+      const done = (err, items) => {
+        return err
+          ? callback(err)
+          : callback(null, items.map(formatEvent));
+      };
 
       itemsStore.loadItems(channel, id, done);
     }

@@ -2,7 +2,6 @@
 
 const async = require('async');
 const utils = require('./utils');
-const identity = (x) => x;
 
 // Constants
 const INDICES = 'indices';
@@ -57,10 +56,11 @@ const createStore = ({
     redisClient.zrangebyscore(key(group, KEYS),
       utils.addOne(start), '+inf', callback);
 
-    const pullAllItems = (keys, callback) =>
-    keys.length > 0
-      ? redisClient.mget(keys, callback)
-      : callback(null, []);
+    const pullAllItems = (keys, callback) => {
+      return keys.length > 0
+        ? redisClient.mget(keys, callback)
+        : callback(null, []);
+    };
 
     async.waterfall([
       retrieveKeys,

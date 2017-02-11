@@ -6,8 +6,6 @@ const td = require('testdouble');
 const {verify, when} = td;
 const {anything, isA} = td.matchers;
 const redis = require('redis');
-const calledOnce = {times: 1, ignoreExtraArgs: true};
-const calledTwice = {times: 2, ignoreExtraArgs: true};
 
 describe('redis.pubsub', () => {
 

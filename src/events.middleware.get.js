@@ -16,10 +16,9 @@ const utils = require('./utils')
 const restify = require('restify')
 
 const createMiddleware = ({
-  poll   = require('./poll'),
-  log    = require('./logger'),
+  poll = require('./poll'),
+  log = require('./logger'),
   config = require('../config'),
-  sub,
   store
 }) => (req, res, next) => {
 
@@ -38,33 +37,33 @@ const createMiddleware = ({
   // returns true iff the middleware's job is over (next was called).
   const processLoad = (err, events, minimalEventsCount = 0) => {
     if (err)
-      return next(convertError(err)), true
+      return next(convertError(err)), true;
     else if (events.length >= minimalEventsCount)
-      return json(events), true
+      return json(events), true;
+    else
+      return false;
   }
 
-  // Process the outcome of poll.add
+  // Process the outcome of poll.listen
   //  - when a new message is received,
   //         -> reload and output events.
   //  - when no new messages are received,
   //         -> output an empty array
-  const processPoll = (err, { unsubscribe, message } = {}) => {
+  const processPoll = (err, message) => {
     if (err) {
-      // TODO: why wouldn't we unsubscribe here as well?
       log.error(err)
       next(new restify.InternalServerError('polling failed'))
     }
     else {
-      unsubscribe()
       if (message > afterId)
-        store.loadEvents(channel, afterId, processLoad)
+        store.loadEvents(channel, afterId, processLoad);
       else
-        json([]) // timeout is not an error but expected behavior
+        json([]); // timeout is not an error but expected behavior
     }
   }
 
   const pollEvents = () =>
-    poll.add(sub, channel, config.pollDuration, processPoll)
+    poll.listen(channel, processPoll);
 
   store.loadEvents(channel, afterId, (err, events) =>
     processLoad(err, events, 1) || pollEvents())

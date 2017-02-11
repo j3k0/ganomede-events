@@ -46,24 +46,21 @@ const child = () => {
   const server = createServer();
 
   // Clients
-  const client = redis.createClient(config.redis.port, config.redis.host)
-  const sub = redis.createClient(config.redis.port, config.redis.host)
-  const pub = redis.createClient(config.redis.port, config.redis.host)
+  const redisClient = redis.createClient(config.redis.port, config.redis.host)
+
+  const eventsRouter = events(config.http.prefix, server, redisClient);
+  about(config.http.prefix, server);
+  ping(config.http.prefix, server);
 
   curtain.on(() => {
     logger.info('worker stopping…');
 
     async.parallel([
-      (cb) => client.quit(cb),
-      (cb) => sub.quit(cb),
-      (cb) => pub.quit(cb),
+      (cb) => redisClient.quit(cb),
       (cb) => server.close(cb),
+      (cb) => eventsRouter.close(cb)
     ], () => cluster.worker.disconnect());
   });
-
-  events(config.http.prefix, server, client, sub, pub);
-  about(config.http.prefix, server);
-  ping(config.http.prefix, server);
 
   server.listen(config.http.port, config.http.host, () => {
     const {port, family, address} = server.address();

@@ -49,8 +49,8 @@ describe('events.middleware.get', () => {
   testChannels[FAILING_POLL_CHANNEL] = () => {
     when(store.loadEvents(FAILING_POLL_CHANNEL, anything()))
       .thenCallback(null, []);
-    when(poll.add(anything(), FAILING_POLL_CHANNEL, anything()))
-      .thenCallback(new Error('poll.add failed'));
+    when(poll.listen(FAILING_POLL_CHANNEL))
+      .thenCallback(new Error('poll.listen failed'));
   };
 
   // EMPTY_CHANNEL:
@@ -59,8 +59,8 @@ describe('events.middleware.get', () => {
   testChannels[EMPTY_CHANNEL] = () => {
     when(store.loadEvents(EMPTY_CHANNEL, anything()))
       .thenCallback(null, []);
-    when(poll.add(anything(), EMPTY_CHANNEL, anything()))
-      .thenCallback(null, {unsubscribe: poll.unsubscribe});
+    when(poll.listen(EMPTY_CHANNEL))
+      .thenCallback(null, null);
   };
 
   // TRIGGER_CHANNEL:
@@ -72,14 +72,11 @@ describe('events.middleware.get', () => {
     when(store.loadEvents(TRIGGER_CHANNEL, anything()))
       .thenCallback(null, []);
 
-    when(poll.add(anything(), TRIGGER_CHANNEL, anything(), anything()))
-      .thenDo((sub, channel, duration, callback) => {
+    when(poll.listen(TRIGGER_CHANNEL, anything()))
+      .thenDo((channel, callback) => {
         when(store.loadEvents(TRIGGER_CHANNEL, anything()))
           .thenCallback(null, [TRIGGER_EVENT]);
-        callback(null, {
-          unsubscribe: poll.unsubscribe,
-          message: TRIGGER_EVENT.id
-        });
+        callback(null, TRIGGER_EVENT.id);
       });
 
   };
@@ -90,9 +87,9 @@ describe('events.middleware.get', () => {
     when(store.loadEvents(anything(), anything()))
       .thenCallback(new Error('unexpected store.loadEvents'));
 
-    poll = td.object(['add', 'unsubscribe']);
-    when(poll.add(anything(), anything(), anything(), anything()))
-      .thenCallback(new Error('unexpected poll.add'));
+    poll = td.object(['listen']);
+    when(poll.listen(anything(), anything()))
+      .thenCallback(new Error('unexpected poll.listen'));
 
     log = td.object(['error']);
 
@@ -145,7 +142,7 @@ describe('events.middleware.get', () => {
 
   it('polls for events when there are none in store', () => {
     withChannel(EMPTY_CHANNEL);
-    verify(poll.add(), calledOnce);
+    verify(poll.listen(), calledOnce);
   });
 
   it('responds with an empty array when polling timeout', () => {
@@ -156,14 +153,14 @@ describe('events.middleware.get', () => {
 
   it('responds with the event when a new message is polled', () => {
     withChannel(TRIGGER_CHANNEL);
-    verify(poll.add(), calledOnce);
+    verify(poll.listen(), calledOnce);
     verify(res.json([TRIGGER_EVENT]));
     verify(next(), calledOnce);
   });
 
   it('responds with an InternalServerError when polling fails', () => {
     withChannel(FAILING_POLL_CHANNEL);
-    verify(poll.add(), calledOnce);
+    verify(poll.listen(), calledOnce);
     verify(next(isA(restify.InternalServerError)));
   });
 

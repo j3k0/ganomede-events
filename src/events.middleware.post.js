@@ -14,10 +14,10 @@ const _ = require('lodash')
 const createMiddleware = ({
   poll   = require('./poll'),
   log    = require('./logger'),
-  pub,
   store
 }) => (req, res, next) => {
 
+  log.info({body: req.body});
   const channel = req.body.channel
   const event = _.pick(req.body, 'from', 'type', 'data')
 
@@ -33,7 +33,7 @@ const createMiddleware = ({
     next();
 
     // notify poll listeners of the new event (in background)
-    poll.trigger(pub, channel, event.id, (err) => {
+    poll.emit(channel, event.id, (err) => {
 
       // ignore success, log errors
       if (err)

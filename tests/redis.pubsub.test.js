@@ -1,258 +1,182 @@
-( () => {
+'use strict';
 
-'use strict'
+const {expect} = require('chai');
+const async = require('async');
+const td = require('testdouble');
+const {verify, when} = td;
+const {anything, isA} = td.matchers;
+const redis = require('redis');
+const calledOnce = {times: 1, ignoreExtraArgs: true};
+const calledTwice = {times: 2, ignoreExtraArgs: true};
 
-const {expect} = require('chai')
-const async = require('async')
-const redis = require('fakeredis')
-const pubsub = require('../src/redis.pubsub')
+describe('redis.pubsub', () => {
 
-describe('Publish To Channel', () => {
+  let pubsub;
+  let redisPubClient;
+  let redisSubClient;
+  let callback;
+  let handler;
 
-  let pub, sub
-  let channel = 'channel'
-  let message = 'message'
+  const OK_CHANNEL = 'ok-channel';
+  const FAIL_CHANNEL = 'fail-channel';
+  const OK_MESSAGE = 'my-message';
 
-  before(done => {
-    pub = redis.createClient(0, 'localhost')
-    sub = redis.createClient(0, 'localhost')
-    done()
-  })
+  beforeEach(() => {
 
-  after(done => {
-    pub.quit()
-    sub.quit()
-    done()
-  })
+    handler = td.function('handler');
+    callback = td.function('callback');
 
-  it('should not return an error when client is not null or undefined', (done) => {
-    pubsub.publish(pub, channel, message, (err, msg) => {
-      expect(err).to.be.null
-      done()
-    })
-  })
+    redisPubClient = td.object(['publish']);
+    when(redisPubClient.publish(OK_CHANNEL, anything()))
+      .thenCallback(null);
+    when(redisPubClient.publish(FAIL_CHANNEL, anything()))
+      .thenCallback(new Error('publish failed'));
 
-  it('should return an error when client is undefined', (done) => {
-    pubsub.publish(undefined, channel, message, (err, msg) => {
-      expect(err).to.not.be.null
-      done()
-    })
-  })
+    redisSubClient = td.object(['subscribe', 'on']);
+    when(redisSubClient.subscribe(OK_CHANNEL))
+      .thenCallback(null);
+    when(redisSubClient.subscribe(FAIL_CHANNEL))
+      .thenCallback(new Error('subscribe failed'));
 
-  it('should return an error when client is null', (done) => {
-    pubsub.publish(null, channel, message, (err, msg) => {
-      expect(err).to.not.be.null
-      done()
-    })
-  })
+    pubsub = require('../src/redis.pubsub').createPubSub({
+      redisSubClient,
+      redisPubClient
+    });
+  });
 
-  it('should allow parallel use of the same client', (done) => {
-    const expects = (err, msgs) => {
-      expect(err).to.be.null
-      done()
-    }
-    async.parallel([
-      pubsub.publish.bind(null, pub, channel, Buffer.from([])),
-      pubsub.publish.bind(null, pub, channel, Buffer.from([])),
-      pubsub.publish.bind(null, pub, channel, Buffer.from([])),
-      pubsub.publish.bind(null, pub, channel, Buffer.from([])),
-    ], expects)
-  })
+  describe('.publish', () => {
 
-  it('should not return an error when message is a string', (done) => {
-    pubsub.publish(pub, channel, message, (err, msg) => {
-      expect(err).to.be.null
-      done()
-    })
-  })
+    it('succeeds when message is a string', () => {
+      pubsub.publish(OK_CHANNEL, 'abc', callback);
+      verify(callback(null));
+    });
 
-  it('should not return an error when message is a buffer', (done) => {
-    pubsub.publish(pub, channel, Buffer.from([]), (err, msg) => {
-      expect(err).to.be.null
-      done()
-    })
-  })
+    it('succeeds when message is a buffer', () => {
+      pubsub.publish(OK_CHANNEL, Buffer.from([]), callback);
+      verify(callback(null));
+    });
 
-  it('should not return an error when message is a number', (done) => {
-    pubsub.publish(pub, channel, 0, (err, msg) => {
-      expect(err).to.be.null
-      done()
-    })
-  })
+    it('succeeds when message is a number', () => {
+      pubsub.publish(OK_CHANNEL, 0, callback);
+      verify(callback(null));
+    });
 
-  it('should return an error when message is not a valid type', (done) => {
-    pubsub.publish(pub, channel, {}, (err, msg) => {
-      expect(err).to.not.be.null
-      done()
-    })
-  })
+    it('fails when message is not a valid type', () => {
+      pubsub.publish(OK_CHANNEL, {}, callback);
+      verify(callback(isA(Error)));
+    });
 
-  it('should allow parallel use of the same message', (done) => {
-    const expects = (err, msgs) => {
-      expect(err).to.be.null
-      done()
-    }
-    async.parallel([
-      pubsub.publish.bind(null, pub, channel, message),
-      pubsub.publish.bind(null, pub, channel, message),
-      pubsub.publish.bind(null, pub, channel, message),
-      pubsub.publish.bind(null, pub, channel, message),
-    ], expects)
-  })
+    it('sends message to channel', () => {
+      pubsub.publish(OK_CHANNEL, OK_MESSAGE, callback);
+      verify(redisPubClient.publish(OK_CHANNEL, OK_MESSAGE, td.callback));
+      verify(callback(null));
+    });
 
-  it('should send message to channel', (done) => {
-    let handler = (ch, msg) => {
-      expect(ch).to.be.equal(channel)
-      expect(msg).to.be.equal(message)
-      pubsub.unsubscribe(sub, channel, handler)
-      done()
-    }
-    const expects = (err, msgs) => {
-      expect(err).to.be.null
-    }
-    async.series([
-      pubsub.subscribe.bind(null, sub, channel, handler),
-      pubsub.publish.bind(null, pub, channel, message),
-    ], expects)
-  })
+    it('fails when redisPubClient fails', () => {
+      pubsub.publish(FAIL_CHANNEL, OK_MESSAGE, callback);
+      verify(callback(isA(Error)));
+    });
 
-})
+  });
 
-describe('Subscribe To Channel', () => {
+  describe('.subscribe', () => {
 
-  let sub, othersub, pub
-  let channel = 'channel'
-  let message = 'message'
-  let nop = () => {}
+    it('fails when handler is not a function', () => {
+      pubsub.subscribe(OK_CHANNEL, {}, callback);
+      verify(callback(isA(Error)));
+    });
 
-  before(done => {
-    sub = redis.createClient(0, 'localhost')
-    othersub = redis.createClient(0, 'localhost')
-    pub = redis.createClient(0, 'localhost')
-    done()
-  })
+    it('succeeds when handler is a function', () => {
+      pubsub.subscribe(OK_CHANNEL, handler, callback);
+      verify(callback(null));
+    });
 
-  after(done => {
-    sub.quit()
-    othersub.quit()
-    pub.quit()
-    done()
-  })
+    it('fails when redisSubClient fails', () => {
+      pubsub.subscribe(FAIL_CHANNEL, handler, callback);
+      verify(callback(isA(Error)));
+    });
+  });
 
-  it('should not return an error when client is not null or undefined', (done) => {
-    pubsub.subscribe(sub, channel, nop, (err, msg) => {
-      expect(err).to.be.null
-      pubsub.unsubscribe(sub, channel, nop)
-      done()
-    })
-  })
+  describe('integration tests', () => {
 
-  it('should return an error when client is undefined', (done) => {
-    pubsub.subscribe(undefined, channel, nop, (err, msg) => {
-      expect(err).to.not.be.null
-      done()
-    })
-  })
+    let pubsub;
+    let redisPubClient;
+    let redisSubClient;
 
-  it('should return an error when client is null', (done) => {
-    pubsub.subscribe(null, channel, nop, (err, msg) => {
-      expect(err).to.not.be.null
-      done()
-    })
-  })
+    before(function(done) {
+      const retry_strategy = (options) =>
+        new Error('skip-test');
+      redisPubClient = redis.createClient({retry_strategy});
+      redisSubClient = redis.createClient({retry_strategy});
+      pubsub = require('../src/redis.pubsub').createPubSub({
+        redisPubClient, redisSubClient
+      });
+      redisPubClient.info((err) => {
+        // Connection to redis failed, skipping integration tests.
+        if (err && err.origin && err.origin.message === "skip-test")
+          this.skip();
+        else
+          done();
+      });
+    });
 
-  it('should allow parallel use of the same client', (done) => {
-    const expects = (err, msgs) => {
-      expect(err).to.be.null
-      pubsub.unsubscribe(sub, channel, nop)
-      pubsub.unsubscribe(sub, channel, nop)
-      pubsub.unsubscribe(sub, channel, nop)
-      pubsub.unsubscribe(sub, channel, nop)
-      done()
-    }
-    async.parallel([
-      pubsub.subscribe.bind(null, sub, channel, nop),
-      pubsub.subscribe.bind(null, sub, channel, nop),
-      pubsub.subscribe.bind(null, sub, channel, nop),
-      pubsub.subscribe.bind(null, sub, channel, nop),
-    ], expects)
-  })
+    after(() => {
+      redisPubClient.quit();
+      redisSubClient.quit();
+    });
 
-  it('should not return an error when handler is a function', (done) => {
-    pubsub.subscribe(sub, channel, nop, (err, msg) => {
-      expect(err).to.be.null
-      done()
-    })
-  })
+    it('notify subscribers on publish', (done) => {
 
-  it('should return an error when handler is not a function', (done) => {
-    pubsub.subscribe(sub, channel, {}, (err, msg) => {
-      expect(err).to.not.be.null
-      done()
-    })
-  })
+      // Create 4 subscribers
+      const subscribers = [0, 1, 2, 3].map((index) =>
+        td.function(`handler${index}`));
 
-  it('should allow parallel use of the same handler', (done) => {
-    const expects = (err, msgs) => {
-      expect(err).to.be.null
-      pubsub.unsubscribe(sub, channel, nop)
-      pubsub.unsubscribe(sub, channel, nop)
-      pubsub.unsubscribe(sub, channel, nop)
-      pubsub.unsubscribe(sub, channel, nop)
-      done()
-    }
-    async.parallel([
-      pubsub.subscribe.bind(null, sub, channel, nop),
-      pubsub.subscribe.bind(null, sub, channel, nop),
-      pubsub.subscribe.bind(null, sub, channel, nop),
-      pubsub.subscribe.bind(null, sub, channel, nop),
-    ], expects)
-  })
+      // Indices of subscribers that we will unsubscribe
+      const toUnsubscribe = [0, 1];
 
-  it('should know 1 subscriber', (done) => {
-    const expects = (err, msgs) => {
-      expect(err).to.be.null
-      expect(msgs[1]).to.be.equal(1)
-      pubsub.unsubscribe(sub, channel, nop)
-      done()
-    }
-    async.series([
-      pubsub.subscribe.bind(null, sub, channel, nop),
-      pubsub.publish.bind(null, pub, channel, message),
-    ], expects)
-  })
+      // Indices of subscribers that will stay subscribed
+      const keepSubscribed = [2, 3];
 
-  it('should know 2 subscribers', (done) => {
-    const expects = (err, msgs) => {
-      expect(err).to.be.null
-      expect(msgs[2]).to.be.equal(2)
-      pubsub.unsubscribe(sub, channel, nop)
-      pubsub.unsubscribe(othersub, channel, nop)
-      done()
-    }
-    async.series([
-      pubsub.subscribe.bind(null, sub, channel, nop),
-      pubsub.subscribe.bind(null, othersub, channel, nop),
-      pubsub.publish.bind(null, pub, channel, message),
-    ], expects)
-  })
+      // Subscribe all to OK_CHANNEL
+      const ops = subscribers.map((subscriber) =>
+        pubsub.subscribe.bind(null, OK_CHANNEL, subscriber))
 
-  it('should receive published message', (done) => {
-    let handler = (ch, msg) => {
-      expect(ch).to.be.equal(channel)
-      expect(msg).to.be.equal(message)
-      pubsub.unsubscribe(sub, channel, handler)
-      done()
-    }
-    const expects = (err, msgs) => {
-      expect(err).to.be.null
-    }
-    async.series([
-      pubsub.subscribe.bind(null, sub, channel, handler),
-      pubsub.publish.bind(null, pub, channel, message),
-    ], expects)
-  })
+      // Publish to OK_CHANNEL and FAIL_CHANNEL
+      .concat([
+        pubsub.publish.bind(null, OK_CHANNEL, OK_MESSAGE),
+        pubsub.publish.bind(null, FAIL_CHANNEL, OK_MESSAGE),
+        // make sure subscribers were called...
+        setTimeout.bind(null, (cb) => {cb()}, 10)
+      ])
 
-})
+      // Unsubscribe some from OK_CHANNEL
+      .concat(toUnsubscribe.map((i) =>
+        pubsub.unsubscribe.bind(null, OK_CHANNEL, subscribers[i])))
 
-})()
+      // Publish to OK_CHANNEL again
+      .concat([
+        pubsub.publish.bind(null, OK_CHANNEL, OK_MESSAGE),
+        // make sure subscribers were called...
+        setTimeout.bind(null, (cb) => {cb()}, 10)
+      ]);
+
+      async.series(ops, (err, results) => {
+
+        expect(err).to.be.null;
+
+        // Those that have been unsubscribed have been called once
+        toUnsubscribe.forEach((index) => {
+          verify(subscribers[index](OK_MESSAGE), {times: 1});
+        });
+
+        // Those that stayed subscribed have been called twice
+        keepSubscribed.forEach((index) => {
+          verify(subscribers[index](OK_MESSAGE), {times: 2});
+        });
+
+        done();
+      });
+    });
+  });
+
+});

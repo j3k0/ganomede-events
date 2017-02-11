@@ -1,65 +1,93 @@
-( () => {
+'use strict';
 
-'use strict'
+const errors = {
+  invalidMessage: 'invalid message',
+  invalidClient: 'invalid redisClient',
+  invalidHandler: 'invalid handler'
+};
 
-const utils = require('./utils')
+const createPubSub = ({
+  redisPubClient,
+  redisSubClient
+}) => {
 
+  const isValidClient = (redisClient) =>
+    typeof redisClient === 'object' && redisClient !== null;
 
-//Constants
-const invalidMessage = 'invalid message'
-const invalidClient = 'invalid client'
-const invalidHandler = 'invalid handler'
+  if (!isValidClient(redisPubClient) || !isValidClient(redisSubClient))
+    throw new Error(errors.invalidClient);
 
+  const isValidMessage = (msg) => (
+    typeof msg === 'number' ||
+      typeof msg === 'string' ||
+      typeof msg === 'object' && msg instanceof Buffer);
 
-const _validClient = (client) => {
-  return typeof client === 'object' && client !== null
-}
+  const isValidHandler = (hndlr) =>
+    typeof hndlr === 'function';
 
-const _validMessage = (msg) => {
-  return typeof msg === 'number' ||
-    typeof msg === 'string' ||
-    typeof msg === 'object' && msg instanceof Buffer
-}
+  // List of handlers for each channel
+  const channelHandlers = {};
+  const addChannelHandler = (channel, handler) => {
+    let handlers = channelHandlers[channel];
+    if (!handlers)
+      handlers = channelHandlers[channel] = [];
+    handlers.push(handler);
+  };
+  const removeChannelHandler = (channel, handler) => {
+    const handlers = channelHandlers[channel];
+    const index = handlers.indexOf(handler);
+    if (index >= 0)
+      handlers.splice(index, 1);
+  };
+  const getChannelHandlers = (channel) =>
+    channelHandlers[channel] || [];
 
-const _validHandler = (hndlr) => {
-  return typeof hndlr === 'function'
-}
+  // Listen for messages
+  redisSubClient.on('message', (channel, message) => {
+    getChannelHandlers(channel).forEach(
+      (handler) => handler(message));
+  });
 
-const publish = (client, channel, message, callback) => {
-  let cb = utils.messageCallback.bind(null, callback)
-  _validClient(client) || cb(invalidClient)
-  _validMessage(message) || cb(invalidMessage)
-  _validClient(client) && _validMessage(message) &&
-    client.publish(String(channel), message, cb)
-}
+  // Are we already susbscribed to a given channel
+  const isSubscribed = {};
 
-const subscribe = (client, channel, handler, callback) => {
-  let cb = utils.messageCallback.bind(null, callback)
-  _validClient(client) || cb(invalidClient)
-  _validHandler(handler) || cb(invalidHandler)
-  _validClient(client) && _validHandler(handler) && (() => {
-    client.subscribe(String(channel), cb)
-    client.addListener('message', handler)
-  })()
-}
+  return {
 
-const unsubscribe = (client, channel, handler, callback) => {
-  let cb = utils.messageCallback.bind(null, callback)
-  _validClient(client) || cb(invalidClient)
-  _validHandler(handler) || cb(invalidHandler)
-  _validClient(client) && _validHandler(handler) && (() => {
-    client.unsubscribe(String(channel), cb)
-    client.removeListener('message', handler)
-  })()
-}
+    publish: (channel, message, cb) => {
+
+      if (!isValidMessage(message))
+        return cb(new Error(errors.invalidMessage));
+
+      redisPubClient.publish(channel, message, cb);
+    },
+
+    subscribe: (channel, handler, cb) => {
+
+      if (!isValidHandler(handler))
+        return cb(new Error(errors.invalidHandler));
+
+      addChannelHandler(channel, handler);
+      if (!isSubscribed[channel]) {
+        isSubscribed[channel] = true;
+        redisSubClient.subscribe(channel, cb);
+      }
+      else {
+        cb(null);
+      }
+    },
+
+    unsubscribe: (channel, handler, cb) => {
+
+      if (!isValidHandler(handler))
+        return cb(new Error(errors.invalidHandler));
+
+      removeChannelHandler(channel, handler);
+      cb(null);
+    }
+  };
+};
 
 module.exports = {
-  invalidMessage,
-  invalidClient,
-  invalidHandler,
-  publish,
-  subscribe,
-  unsubscribe,
-}
-
-})()
+  errors,
+  createPubSub
+};

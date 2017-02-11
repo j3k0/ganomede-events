@@ -1,68 +1,46 @@
-( () => {
-
 'use strict'
 
-const pubsub = require('./redis.pubsub')
-const utils = require('./utils')
+const utils = require('./utils');
 
+const createPoll = ({
+  pubsub,
+  log = require('./logger'),
+  pollTimeout = utils.zeroIfNaN(require('../config').pollTimeout),
+  setTimeout = global.setTimeout,
+  clearTimeout = global.clearTimeout
+}) => {
 
-// Constants
-const selfProp = 'self'
+  const logError = (err) => err && log.error(err);
 
-const invalidTimeout = 'invalid timeout function'
-const invalidTrigger = 'invalid trigger function'
+  const listen = (channel, callback) => {
 
+    const done = (err, message) => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      if (handler) {
+        pubsub.unsubscribe(channel, handler, logError);
+        handler = null;
+      }
+      if (callback) {
+        const cb = callback;
+        callback = null;
+        cb(err, message);
+      }
+    };
 
-const _validHandler = (hndlr) => {
-  return typeof hndlr === 'function'
-}
+    const timeout = () => done(null, null);
+    let timeoutId = setTimeout(timeout, pollTimeout);
+    let handler = (message) => done(null, message);
+    pubsub.subscribe(channel, handler, logError);
+  };
 
-const _unsubscribe = (client, channel, subscribed, doUnsubscribe = true) => {
-  doUnsubscribe && 
-    pubsub.unsubscribe(client, channel, subscribed)
-}
+  const emit = (channel, message, callback) => {
+    pubsub.publish(channel, message, callback);
+  };
 
-const _unsubscribeOnTimeout = (timeout, client, channel, subscribed, callback) => {
-  let cb = utils.messageCallback.bind(null, callback)
-  _validHandler(timeout) || cb(invalidTimeout)
-  timeout(_unsubscribe.bind(null, client, channel, subscribed[selfProp]))
-}
+  return {listen, emit};
+};
 
-const _clear = (client, channel, subscribed, id, doClear = true) => {
-  doClear && (() => {
-    clearTimeout(id)
-    pubsub.unsubscribe(client, channel, subscribed)
-  })()
-}
-
-const _clearOnTrigger = (trigger, client, subscribed, id, callback, channel, message) => {
-  let cb = utils.messageCallback.bind(null, callback)
-  _validHandler(trigger) || cb(invalidTrigger)
-  trigger(channel, message,
-    _clear.bind(null, client, channel, subscribed[selfProp], id))
-}
-
-const add = (client, channel, delay, trigger, timeout, callback) => {
-  // trigger here is from outside caller
-  let subscribed = {}
-  let timeoutfunc = _unsubscribeOnTimeout.bind(null, timeout, client, channel, subscribed, callback)
-  let dly = utils.zeroIfNaN(delay)
-  let id = setTimeout(timeoutfunc, dly)
-  let triggerfunc = _clearOnTrigger.bind(null, trigger, client, subscribed, id, callback)
-  subscribed[selfProp] = triggerfunc
-  pubsub.subscribe(client, channel, triggerfunc, callback)
-}
-
-const trigger = (client, channel, message, callback) => {
-  pubsub.publish(client, channel, message, callback)
-}
-
-
-module.exports = {
-  invalidTimeout,
-  invalidTrigger,
-  add,
-  trigger,
-}
-
-})()
+module.exports = {createPoll};

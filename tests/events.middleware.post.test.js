@@ -20,7 +20,7 @@ describe('events.middleware.post', () => {
   let next;
 
   const FAILING_ADD_CHANNEL = 'failing-add-channel';
-  const FAILING_TRIGGER_CHANNEL = 'failing-trigger-channel';
+  const FAILING_EMIT_CHANNEL = 'failing-emit-channel';
   const SUCCESS_CHANNEL = 'success-channel';
   const SUCCESS_EVENT = {
     from: 'from',
@@ -41,21 +41,21 @@ describe('events.middleware.post', () => {
   };
 
   // SUCCESS_CHANNEL:
-  //  - addEvent and trigger succeeds
+  //  - addEvent and emit succeeds
   testChannels[SUCCESS_CHANNEL] = () => {
     when(store.addEvent(SUCCESS_CHANNEL, SUCCESS_EVENT))
       .thenCallback(null, SUCCESS_EVENT_WITH_ID);
-    td.when(poll.trigger(anything(), SUCCESS_CHANNEL, anything()))
+    td.when(poll.emit(SUCCESS_CHANNEL, anything()))
       .thenCallback(null);
   };
 
-  // FAILING_TRIGGER_CHANNEL:
+  // FAILING_EMIT_CHANNEL:
   //  - addEvent succeeds
-  //  - trigger fails with a InternalServerError
-  testChannels[FAILING_TRIGGER_CHANNEL] = () => {
-    when(store.addEvent(FAILING_TRIGGER_CHANNEL, SUCCESS_EVENT))
+  //  - emit fails with a InternalServerError
+  testChannels[FAILING_EMIT_CHANNEL] = () => {
+    when(store.addEvent(FAILING_EMIT_CHANNEL, SUCCESS_EVENT))
       .thenCallback(null, SUCCESS_EVENT_WITH_ID);
-    td.when(poll.trigger(anything(), FAILING_TRIGGER_CHANNEL, anything()))
+    td.when(poll.emit(FAILING_EMIT_CHANNEL, anything()))
       .thenCallback(new restify.InternalServerError());
   };
 
@@ -65,11 +65,11 @@ describe('events.middleware.post', () => {
     when(store.addEvent(anything(), anything()))
       .thenCallback(new Error('unexpected store.addEvent'));
 
-    poll = td.object(['trigger']);
-    when(poll.trigger(anything(), anything(), anything()))
-      .thenCallback(new Error('unexpected poll.trigger'));
+    poll = td.object(require('../src/poll.js').createPoll({}));
+    when(poll.emit(anything(), anything()))
+      .thenCallback(new Error('unexpected poll.emit'));
 
-    log = td.object(['error']);
+    log = td.object(['error', 'info']);
 
     middleware = require('../src/events.middleware.post')
       .createMiddleware({poll, store, log});
@@ -109,8 +109,8 @@ describe('events.middleware.post', () => {
     verify(next(isA(restify.InternalServerError)));
   });
 
-  it('logs poll.trigger failures to the console', () => {
-    withChannel(FAILING_TRIGGER_CHANNEL);
+  it('logs poll.emit failures to the console', () => {
+    withChannel(FAILING_EMIT_CHANNEL);
     verify(next(), calledOnce);
     verify(log.error(), {ignoreExtraArgs: true});
   });

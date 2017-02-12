@@ -24,8 +24,9 @@ const createMiddleware = ({
   store
 }) => (req, res, next) => {
 
-  const {channel, after} = req.params;
+  const {channel, after, limit} = req.params;
   const afterId = utils.zeroIfNaN(after);
+  const lim = (!limit || isNaN(limit) || limit == 0) ? 100 : limit;
 
   if (!channel)
     return next(new restify.InvalidContentError('channel missing'));
@@ -58,7 +59,7 @@ const createMiddleware = ({
     }
     else {
       if (message > afterId)
-        store.loadEvents(channel, afterId, processLoad);
+        store.loadEvents(channel, afterId, lim, processLoad);
       else
         json([]); // timeout is not an error but expected behavior
     }
@@ -67,7 +68,7 @@ const createMiddleware = ({
   const pollEvents = () =>
     poll.listen(channel, processPoll);
 
-  store.loadEvents(channel, afterId, (err, events) => {
+  store.loadEvents(channel, afterId, lim, (err, events) => {
     return processLoad(err, events, 1) || pollEvents();
   });
 };

@@ -258,5 +258,40 @@ describe('events.store', () => {
       expects);
     });
 
+    it('should not return an error when limit is a string', (done) => {
+      store.addThreeEvents(channel, event);
+      store.loadEvents(channel, afterId, 'random@string', (err, msg) => {
+        expect(err).to.be.null;
+        done();
+      });
+    });
+
+    it('should not return an error when limit is undefined', (done) => {
+      store.loadEvents(channel, afterId, undefined, (err, msg) => {
+        expect(err).to.be.null;
+        done();
+      });
+    });
+
+    it('should not return an error when limit is digital null', (done) => {
+      store.loadEvents(channel, afterId, 0, (err, msg) => {
+        expect(err).to.be.null;
+        done();
+      });
+    });
+
+    it('should not return an error when limit is null', (done) => {
+      store.loadEvents(channel, afterId, null, (err, msg) => {
+        expect(err).to.be.null;
+        done();
+      });
+    });
+
+    it('should not return an error when limit is a number', (done) => {
+      store.loadEvents(channel, afterId, lim, (err, msg) => {
+        expect(err).to.be.null;
+        done();
+      });
+    });
   });
 });

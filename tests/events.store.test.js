@@ -259,39 +259,68 @@ describe('events.store', () => {
     });
 
     it('should not return an error when limit is a string', (done) => {
-      store.addThreeEvents(channel, event);
-      store.loadEvents(channel, afterId, 'random@string', (err, msg) => {
+      const expects = (err, res) => {
+        const events = res[3];
         expect(err).to.be.null;
+        expect(events).to.have.lengthOf(3);
         done();
-      });
+      };
+      async.series(
+      addThreeEvents(channel, event)
+        .concat(loadEvents(channel, afterId, 'random@string')),
+      expects);
     });
 
     it('should not return an error when limit is undefined', (done) => {
-      store.loadEvents(channel, afterId, undefined, (err, msg) => {
+      const expects = (err, res) => {
+        const events = res[3];
         expect(err).to.be.null;
+        expect(events).to.have.lengthOf(3);
         done();
-      });
+      };
+      async.series(
+      addThreeEvents(channel, event)
+        .concat(loadEvents(channel, afterId, undefined)),
+      expects);
     });
 
     it('should not return an error when limit is digital null', (done) => {
-      store.loadEvents(channel, afterId, 0, (err, msg) => {
+      const expects = (err, res) => {
+        const events = res[3];
         expect(err).to.be.null;
+        expect(events).to.have.lengthOf(3);
         done();
-      });
+      };
+      async.series(
+      addThreeEvents(channel, event)
+        .concat(loadEvents(channel, afterId, 0)),
+      expects);
     });
 
     it('should not return an error when limit is null', (done) => {
-      store.loadEvents(channel, afterId, null, (err, msg) => {
+      const expects = (err, res) => {
+        const events = res[3];
         expect(err).to.be.null;
+        expect(events).to.have.lengthOf(3);
         done();
-      });
+      };
+      async.series(
+      addThreeEvents(channel, event)
+        .concat(loadEvents(channel, afterId, null)),
+      expects);
     });
 
     it('should not return an error when limit is a number', (done) => {
-      store.loadEvents(channel, afterId, lim, (err, msg) => {
+      const expects = (err, res) => {
+        const events = res[3];
         expect(err).to.be.null;
+        expect(events).to.have.lengthOf(3);
         done();
-      });
+      };
+      async.series(
+      addThreeEvents(channel, event)
+        .concat(loadEvents(channel, afterId, lim)),
+      expects);
     });
   });
 });

@@ -9,6 +9,7 @@ describe('redis.store', () => {
 
   let redisClient;
   let store;
+  const lim = 100;
   const item = {};
   const start = 1;
   const group = 'group';
@@ -65,7 +66,7 @@ describe('redis.store', () => {
   describe('.loadItems', () => {
 
     it('should succeed when all parameters are defined', (done) => {
-      store.loadItems(group, start, (err, msg) => {
+      store.loadItems(group, start, lim, (err, msg) => {
         expect(err).to.be.null;
         done();
       });

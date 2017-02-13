@@ -9,6 +9,7 @@ describe('events.store', () => {
 
   let redisClient;
   let store;
+  const lim = 100;
   const event = {};
   const afterId = 0;
   const channel = 'channel';
@@ -24,7 +25,7 @@ describe('events.store', () => {
     addEvent(channel, event)];
 
   const loadEvents = (channel, id) => (callback) =>
-  store.loadEvents(channel, id, callback);
+  store.loadEvents(channel, id, lim, callback);
 
   beforeEach(done => {
     redisClient = redis.createClient(0, 'localhost');
@@ -107,7 +108,7 @@ describe('events.store', () => {
       };
 
       async.series(
-      addTwoEvents(channel, event).concat(loadEvents(channel, 0)),
+      addTwoEvents(channel, event).concat(loadEvents(channel, 0, lim)),
       expects);
     });
 
@@ -125,8 +126,8 @@ describe('events.store', () => {
       async.series([
         addEvent(channel, event),
         addEvent(otherChannel, event),
-        loadEvents(channel, 0),
-        loadEvents(otherChannel, 0),
+        loadEvents(channel, 0, lim),
+        loadEvents(otherChannel, 0, lim),
       ], expects);
     });
 
@@ -136,56 +137,56 @@ describe('events.store', () => {
   describe('.loadEvents', () => {
 
     it('should not return an error when channel is a string', (done) => {
-      store.loadEvents(channel, afterId, (err, msg) => {
+      store.loadEvents(channel, afterId, lim, (err, msg) => {
         expect(err).to.be.null;
         done();
       });
     });
 
     it('should return an error when channel is undefined', (done) => {
-      store.loadEvents(undefined, afterId, (err, msg) => {
+      store.loadEvents(undefined, afterId, lim, (err, msg) => {
         expect(err).to.not.be.null;
         done();
       });
     });
 
     it('should return an error when channel is not a string', (done) => {
-      store.loadEvents(0, afterId, (err, msg) => {
+      store.loadEvents(0, afterId, lim, (err, msg) => {
         expect(err).to.not.be.null;
         done();
       });
     });
 
     it('should not return an error when after ID is a number', (done) => {
-      store.loadEvents(channel, afterId, (err, msg) => {
+      store.loadEvents(channel, afterId, lim, (err, msg) => {
         expect(err).to.be.null;
         done();
       });
     });
 
     it('should not return an error when after ID is string parseable to number', (done) => {
-      store.loadEvents(channel, '1', (err, msg) => {
+      store.loadEvents(channel, '1', lim, (err, msg) => {
         expect(err).to.be.null;
         done();
       });
     });
 
     it('should not return an error when after ID is undefined', (done) => {
-      store.loadEvents(channel, undefined, (err, msg) => {
+      store.loadEvents(channel, undefined, lim, (err, msg) => {
         expect(err).to.be.null;
         done();
       });
     });
 
     it('should return an error when after ID is not valid', (done) => {
-      store.loadEvents(channel, 'true', (err, msg) => {
+      store.loadEvents(channel, 'true', lim, (err, msg) => {
         expect(err).to.not.be.null;
         done();
       });
     });
 
     it('should return no event from empty channel', (done) => {
-      store.loadEvents(channel, afterId, (err, events) => {
+      store.loadEvents(channel, afterId, lim, (err, events) => {
         expect(events).to.have.lengthOf(0);
         done();
       });
@@ -201,7 +202,7 @@ describe('events.store', () => {
       };
       async.series(
       addTwoEvents(channel, event)
-        .concat(loadEvents(channel, afterId))
+        .concat(loadEvents(channel, afterId, lim))
       , expects);
     });
 
@@ -216,7 +217,7 @@ describe('events.store', () => {
       async.series([
         addEvent(channel, event),
         addEvent(otherChannel, event),
-        loadEvents(channel, afterId),
+        loadEvents(channel, afterId, lim),
       ], expects);
     });
 
@@ -228,7 +229,7 @@ describe('events.store', () => {
       };
       async.series(
       addThreeEvents(channel, event)
-        .concat(loadEvents(channel, 3)),
+        .concat(loadEvents(channel, 3, lim)),
       expects);
     });
 
@@ -239,7 +240,7 @@ describe('events.store', () => {
       };
       async.series(
       addThreeEvents(channel, event)
-        .concat(loadEvents(channel, 4)),
+        .concat(loadEvents(channel, 4, lim)),
       expects);
     });
 
@@ -253,9 +254,73 @@ describe('events.store', () => {
       };
       async.series(
       addThreeEvents(channel, event)
-        .concat(loadEvents(channel, 1)),
+        .concat(loadEvents(channel, 1, lim)),
       expects);
     });
 
+    it('should not return an error when limit is a string', (done) => {
+      const expects = (err, res) => {
+        const events = res[3];
+        expect(err).to.be.null;
+        expect(events).to.have.lengthOf(3);
+        done();
+      };
+      async.series(
+      addThreeEvents(channel, event)
+        .concat(loadEvents(channel, afterId, 'random@string')),
+      expects);
+    });
+
+    it('should not return an error when limit is undefined', (done) => {
+      const expects = (err, res) => {
+        const events = res[3];
+        expect(err).to.be.null;
+        expect(events).to.have.lengthOf(3);
+        done();
+      };
+      async.series(
+      addThreeEvents(channel, event)
+        .concat(loadEvents(channel, afterId, undefined)),
+      expects);
+    });
+
+    it('should not return an error when limit is digital null', (done) => {
+      const expects = (err, res) => {
+        const events = res[3];
+        expect(err).to.be.null;
+        expect(events).to.have.lengthOf(3);
+        done();
+      };
+      async.series(
+      addThreeEvents(channel, event)
+        .concat(loadEvents(channel, afterId, 0)),
+      expects);
+    });
+
+    it('should not return an error when limit is null', (done) => {
+      const expects = (err, res) => {
+        const events = res[3];
+        expect(err).to.be.null;
+        expect(events).to.have.lengthOf(3);
+        done();
+      };
+      async.series(
+      addThreeEvents(channel, event)
+        .concat(loadEvents(channel, afterId, null)),
+      expects);
+    });
+
+    it('should not return an error when limit is a number', (done) => {
+      const expects = (err, res) => {
+        const events = res[3];
+        expect(err).to.be.null;
+        expect(events).to.have.lengthOf(3);
+        done();
+      };
+      async.series(
+      addThreeEvents(channel, event)
+        .concat(loadEvents(channel, afterId, lim)),
+      expects);
+    });
   });
 });

@@ -8,6 +8,7 @@
         + secret (string, required) ... Authentication token
         + channel (string, required) ... The channel to listen to
         + after (integer) ... All events received after the one with given ID
+        + limit (integer) ... Limit max amount of received events (default to 100)
 
 Will retrieve all recent events for the given channel. In case no new events are available, the request will wait for data until a timeout occurs.
 

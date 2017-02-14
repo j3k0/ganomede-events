@@ -73,4 +73,43 @@ describe('redis.store', () => {
     });
 
   });
+
+  describe('All together now', () => {
+    beforeEach((done) => {
+      async.times(
+        7,
+        (id, cb) => store.addItem('channel', {}, itemFactory, cb),
+        done
+      );
+    });
+
+    it('works', (done) => {
+      async.series([
+        (cb) => store.loadItems('channel', 0, 1, cb),
+        (cb) => store.loadItems('channel', 1, 1, cb),
+        (cb) => store.loadItems('channel', 3, 2, cb),
+        (cb) => store.loadItems('channel', 6, 100, cb),
+        (cb) => store.loadItems('channel', 7, 7, cb)
+      ], (err, [first, second, twoItems, limitPastEnd, readPastEnd]) => {
+        expect(err).to.be.null;
+
+        expect(first).to.have.length(1);
+        expect(first[0]).to.have.property('index', 1);
+
+        expect(second).to.have.length(1);
+        expect(second[0]).to.have.property('index', 2);
+
+        expect(twoItems).to.have.length(2);
+        expect(twoItems[0]).to.have.property('index', 4);
+        expect(twoItems[1]).to.have.property('index', 5);
+
+        expect(limitPastEnd).to.have.length(1);
+        expect(limitPastEnd[0]).to.have.property('index', 7);
+
+        expect(readPastEnd).to.eql([]);
+
+        done();
+      });
+    });
+  });
 });

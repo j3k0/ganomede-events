@@ -3,7 +3,7 @@
 const url = require('url');
 const config = require('../../config');
 
-describe.only('Client', () => {
+describe('Client', () => {
   let Client;
   let requestEvents;
 

@@ -22,9 +22,12 @@ class Client extends EventEmitter {
     agent,
     protocol = 'http',
     hostname = 'localhost',
-    port = 3000,
+    port = 8000,
     pathname = `${config.http.prefix}/events`
   } = {}) {
+    if ((typeof secret !== 'string') || (secret.length === 0))
+      throw new Error('options.secret must be non-empty string');
+
     const normalizedProtocol = protocol.endsWith(':') ? protocol : `${protocol}:`;
 
     super();

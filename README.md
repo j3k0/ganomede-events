@@ -48,19 +48,16 @@ docker run -p 8000:8000 --link redis_events:redis_events ganomede/events
 
 You can also play around with provided `docker-compose.yml` and `Dockerfile`.
 
-### Library
+### Client Library
+
+`Client` is an [`EventEmitter`](https://nodejs.org/docs/latest/api/events.html#events_class_eventemitter). When you [register handler for an event](https://nodejs.org/docs/latest/api/events.html#events_emitter_on_eventname_listener), it will treat `eventName` as channel you'd like to listen for events on (and start issuing HTTP(S) request). When you remove all listeners for a channel, HTTP(S) request will stop (but request currently running won't be aborted!).
 
 ```js
-const GanomedeEvents = require('ganomede-events');
+const {Client} = require('ganomede-events');
+const clientId = 'mailchimp-synchronizer';
+const events = new Client(clientId, options); // see Client API for more
 
-const events = GanomedeEvents.createClient({
-    id: "mailchimp-synchronizer",
-    secret: 'my-api-secret-token',
-    host: "events.local",
-    port: 8000
-});
-
-// Emit an event, with custom data
+// Send event to a specific @channel with @data.
 events.send('users/v1:add', {
     thing: 'abc',
     stuff: 123,
@@ -80,44 +77,51 @@ const handler = (event) => {
     //     event.data.blob
 };
 
-// Start listening to events
-events.on('users/v1:add', handler);
 
-// Stop listening to events
-events.off('users/v1:add', handler);
+events.on('users/v1', handler);     // listen to all events from a channel
+events.on('users/v1:add', handler); // or specific type
+events.removeListener('users/v1:add', handler); // remove specific handlers
 
-// Listen to any event from 'users/v1'
-events.on('users/v1:add', handler);
-
-// Listen to any event
-events.on('*', handler);
+// `error` event is special (like some others, see below for more),
+// it won't poll `error` channel.
+// (it will also throw if no handlers are registred)
+events.on('error', (channel, error) => { /* handle HTTP(S) error */ });
 ```
 
 ## API
 
 The [server REST API is documented here](API.md). Find below the API for the NodeJS library.
 
-### GanomedeEvents.createClient(options)
+### `new Client(clientId, options)`
 
 Creates the pub/sub client.
 
 **Arguments**
 
+ * `clientId: string`
+    * requried
+    * a unique identifier for the client
+    * used on the server to save/restore state, required
+
  * `options: object` with the following fields:
-    * `id: string`
-      * a unique identifier for the client
-      * **optional**
-      * used internally to save/restore state;
-      * when not specified, some events might be received again after a restart;
-    * `host: string`
+    * `secret: string`
+      * `API_SECRET` of remote
+      * **requried** and must be non-empty
+    * `agent` — [`http.Agent`](https://nodejs.org/docs/latest/api/http.html#http_class_http_agent) or [`https.Agent`](https://nodejs.org/docs/latest/api/https.html#https_class_https_agent) instance
+      * agent to use (useful for enabling things like `keepAlive`, number of simultaneous requests, etc.)
+      * **defaults** to [`http.globalAgent`](https://nodejs.org/docs/latest/api/http.html#http_http_globalagent) or [`https.globalAgent`](https://nodejs.org/docs/latest/api/https.html#https_https_globalagent) (depending on protocol)
+    * `protocol: string`
+      * protocol used to connect to the notifications service (`'http'` or `'https'`)
+      * **default** `'http'`
+    * `hostname: string`
       * hostname or ip of the notifications service
-      * **default** `"localhost"`
+      * **default** `'localhost'`
     * `port: int`
       * port number of the notifications service
       * **default** `8000`
-    * `protocol: string`
-      * protocol used to connect to the notifications service (http or https)
-      * **default** `"http"`
+    * `pathname: string`
+      * endpoint's pathname
+      * **default** `config.http.prefix + '/events'` (`'/events/v1/events'`)
 
 ### client.send(channel, data)
 
@@ -134,12 +138,18 @@ Publish an event to a given channel.
 
 Start receiving events from a given channel.
 
+Some `channel`s are special, and you can not listen for those (don't name them that):
+
+  - [`newListener`](https://nodejs.org/docs/latest/api/events.html#events_event_newlistener) / [`removeListener`](https://nodejs.org/docs/latest/api/events.html#events_event_removelistener) — `EventEmitter`'s events;
+  - `error` — used to handle HTTP(S) errors, handler invoked with `(channel, error)`. Non-200 statuses are errors.
+  - `drain` — when there are no channel-listeners and all HTTP(S) request are finished.
+
 **Arguments**
 
  * `channel: string`
    * the channel to listen to
    * `"*"` for all channels
- * `handler: function(event)`
+ * `handler: function (event)`
    * handle messages posted on the given channel.
    * receives as argument an event object, with the following fields:
      * `id: int`
@@ -151,9 +161,11 @@ Start receiving events from a given channel.
      * `data: object`
        * custom user-specified data
 
-### client.off(channel, handler)
+### client.removeListener(channel, handler)
 
 Stop receiving events from a given channel.
+
+**Note** that any requests in-progress will finish, and events may be discarded.
 
 **Arguments**
 

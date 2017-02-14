@@ -8,7 +8,6 @@ const config = require('../../config');
 
 // Some events are special, and have nothing to do with our channles,
 // we should not start HTTP request for them. should not monitor them:
-//
 const ignoreChannels = [
   'newListener',    // EventEmitter's after listener added
   'removeListener', // EventEmitter's after listener removed
@@ -40,13 +39,6 @@ class Client extends EventEmitter {
       port,
       pathname
     });
-  }
-
-  emitEvent (event) {
-    const service = event.from;
-    const eventType = event.type;
-    this.emit(service, event);
-    this.emit(`${service}:${eventType}`, event);
   }
 
   request (channel, callback) {
@@ -81,7 +73,7 @@ class Client extends EventEmitter {
       if (err)
         this.emit('error', channel, err);
       else
-        events.forEach(e => this.emitEvent(e));
+        events.forEach(e => this.emit(channel, e));
 
       this.polls[channel] = false;
 

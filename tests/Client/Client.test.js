@@ -34,10 +34,13 @@ describe('Client', () => {
 
     const handler = event => {
       ++nEmits;
-      if (nEmits === 4) {
-        client.removeListener('service', handler);
+      if (nEmits === 2) {
+        // first we receive 2 messages from one channel
         client.removeListener('service:type', handler);
-        expect(nCalls).to.equal(2);
+      }
+      else if (nEmits === 4) {
+        // then 2 messages from another
+        client.removeListener('service', handler);
       }
       else if (nEmits > 4)
         done(new Error('oops too many emits ' + nEmits));
@@ -45,7 +48,10 @@ describe('Client', () => {
 
     client.on('service:type', handler);
     client.on('service', handler);
-    client.on('drain', done);
+    client.on('drain', () => {
+      expect(nCalls).to.equal(2);
+      done();
+    });
   });
 
   it('#once() works without rescheduling', (done) => {

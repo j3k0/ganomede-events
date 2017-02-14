@@ -57,7 +57,7 @@ const createStore = ({
     },
 
   // Retrieve all events from a channel, with ids bigger than the given one
-    loadEvents: (channel, id, lim, callback) => {
+    loadEvents: (channel, id, limit, callback) => {
 
       callback = callback || identity;
 
@@ -81,7 +81,7 @@ const createStore = ({
           : callback(null, items.map(formatEvent));
       };
 
-      itemsStore.loadItems(channel, id, lim, done);
+      itemsStore.loadItems(channel, id, limit, done);
     }
   };};
 

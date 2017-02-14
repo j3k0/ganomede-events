@@ -9,7 +9,7 @@ describe('events.store', () => {
 
   let redisClient;
   let store;
-  const lim = 100;
+  const limit = 100;
   const event = {};
   const afterId = 0;
   const channel = 'channel';
@@ -25,7 +25,7 @@ describe('events.store', () => {
     addEvent(channel, event)];
 
   const loadEvents = (channel, id) => (callback) =>
-  store.loadEvents(channel, id, lim, callback);
+  store.loadEvents(channel, id, limit, callback);
 
   beforeEach(done => {
     redisClient = redis.createClient(0, 'localhost');
@@ -108,7 +108,7 @@ describe('events.store', () => {
       };
 
       async.series(
-      addTwoEvents(channel, event).concat(loadEvents(channel, 0, lim)),
+      addTwoEvents(channel, event).concat(loadEvents(channel, 0, limit)),
       expects);
     });
 
@@ -126,8 +126,8 @@ describe('events.store', () => {
       async.series([
         addEvent(channel, event),
         addEvent(otherChannel, event),
-        loadEvents(channel, 0, lim),
-        loadEvents(otherChannel, 0, lim),
+        loadEvents(channel, 0, limit),
+        loadEvents(otherChannel, 0, limit),
       ], expects);
     });
 
@@ -137,56 +137,56 @@ describe('events.store', () => {
   describe('.loadEvents', () => {
 
     it('should not return an error when channel is a string', (done) => {
-      store.loadEvents(channel, afterId, lim, (err, msg) => {
+      store.loadEvents(channel, afterId, limit, (err, msg) => {
         expect(err).to.be.null;
         done();
       });
     });
 
     it('should return an error when channel is undefined', (done) => {
-      store.loadEvents(undefined, afterId, lim, (err, msg) => {
+      store.loadEvents(undefined, afterId, limit, (err, msg) => {
         expect(err).to.not.be.null;
         done();
       });
     });
 
     it('should return an error when channel is not a string', (done) => {
-      store.loadEvents(0, afterId, lim, (err, msg) => {
+      store.loadEvents(0, afterId, limit, (err, msg) => {
         expect(err).to.not.be.null;
         done();
       });
     });
 
     it('should not return an error when after ID is a number', (done) => {
-      store.loadEvents(channel, afterId, lim, (err, msg) => {
+      store.loadEvents(channel, afterId, limit, (err, msg) => {
         expect(err).to.be.null;
         done();
       });
     });
 
     it('should not return an error when after ID is string parseable to number', (done) => {
-      store.loadEvents(channel, '1', lim, (err, msg) => {
+      store.loadEvents(channel, '1', limit, (err, msg) => {
         expect(err).to.be.null;
         done();
       });
     });
 
     it('should not return an error when after ID is undefined', (done) => {
-      store.loadEvents(channel, undefined, lim, (err, msg) => {
+      store.loadEvents(channel, undefined, limit, (err, msg) => {
         expect(err).to.be.null;
         done();
       });
     });
 
     it('should return an error when after ID is not valid', (done) => {
-      store.loadEvents(channel, 'true', lim, (err, msg) => {
+      store.loadEvents(channel, 'true', limit, (err, msg) => {
         expect(err).to.not.be.null;
         done();
       });
     });
 
     it('should return no event from empty channel', (done) => {
-      store.loadEvents(channel, afterId, lim, (err, events) => {
+      store.loadEvents(channel, afterId, limit, (err, events) => {
         expect(events).to.have.lengthOf(0);
         done();
       });
@@ -202,7 +202,7 @@ describe('events.store', () => {
       };
       async.series(
       addTwoEvents(channel, event)
-        .concat(loadEvents(channel, afterId, lim))
+        .concat(loadEvents(channel, afterId, limit))
       , expects);
     });
 
@@ -217,7 +217,7 @@ describe('events.store', () => {
       async.series([
         addEvent(channel, event),
         addEvent(otherChannel, event),
-        loadEvents(channel, afterId, lim),
+        loadEvents(channel, afterId, limit),
       ], expects);
     });
 
@@ -229,7 +229,7 @@ describe('events.store', () => {
       };
       async.series(
       addThreeEvents(channel, event)
-        .concat(loadEvents(channel, 3, lim)),
+        .concat(loadEvents(channel, 3, limit)),
       expects);
     });
 
@@ -240,7 +240,7 @@ describe('events.store', () => {
       };
       async.series(
       addThreeEvents(channel, event)
-        .concat(loadEvents(channel, 4, lim)),
+        .concat(loadEvents(channel, 4, limit)),
       expects);
     });
 
@@ -254,7 +254,7 @@ describe('events.store', () => {
       };
       async.series(
       addThreeEvents(channel, event)
-        .concat(loadEvents(channel, 1, lim)),
+        .concat(loadEvents(channel, 1, limit)),
       expects);
     });
 
@@ -319,7 +319,7 @@ describe('events.store', () => {
       };
       async.series(
       addThreeEvents(channel, event)
-        .concat(loadEvents(channel, afterId, lim)),
+        .concat(loadEvents(channel, afterId, limit)),
       expects);
     });
   });

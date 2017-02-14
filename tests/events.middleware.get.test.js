@@ -106,7 +106,7 @@ describe('events.middleware.get', () => {
     params: {
       channel: 'channel',
       after: '0',
-      lim: '100'
+      limit: '100'
     }
   });
 

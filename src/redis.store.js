@@ -47,14 +47,14 @@ const createStore = ({
     async.waterfall([incrIndex, pushItem], callback);
   },
 
-  loadItems: (group, start, lim, callback) => {
+  loadItems: (group, start, limit, callback) => {
 
     if (!isRedisClient(redisClient))
       return callback(new Error(errors.invalidClient));
 
     const retrieveKeys = (callback) =>
     redisClient.zrangebyscore(key(group, KEYS),
-      utils.addOne(start), '+inf', 'LIMIT', 0, lim, callback);
+      utils.addOne(start), '+inf', 'LIMIT', 0, limit, callback);
 
     const pullAllItems = (keys, callback) => {
       return keys.length > 0

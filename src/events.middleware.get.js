@@ -17,6 +17,18 @@ const eventsStore = require('./events.store');
 const utils = require('./utils');
 const restify = require('restify');
 
+const toInt = (something, defaultValue = NaN) => {
+  const str = String(something);
+  const int = parseInt(str, 10);
+  const ok = isFinite(int) && (String(int)) === str;
+  return ok ? int : defaultValue;
+};
+
+const parseLimit = (paramValue, {min = 1, max = 100, byDefault = 100} = {}) => {
+  const desired = toInt(paramValue, byDefault);
+  return Math.min(Math.max(min, desired), max);
+};
+
 const createMiddleware = ({
   poll = require('./poll'),
   log = require('./logger'),
@@ -26,7 +38,7 @@ const createMiddleware = ({
 
   const {channel, after, limit} = req.params;
   const afterId = utils.zeroIfNaN(after);
-  const lim = (!limit || isNaN(limit) || limit == 0) ? 100 : limit;
+  const lim = parseLimit(limit);
 
   if (!channel)
     return next(new restify.InvalidContentError('channel missing'));

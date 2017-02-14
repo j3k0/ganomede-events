@@ -98,3 +98,7 @@ const child = () => {
 
 if (!module.parent)
   cluster.isMaster ? master() : child();
+
+module.exports = {
+  Client: require('./src/client/Client')
+};

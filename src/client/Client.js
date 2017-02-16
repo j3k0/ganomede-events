@@ -1,8 +1,8 @@
 'use strict';
 
-const url = require('url');
 const {EventEmitter} = require('events');
 const lodash = require('lodash');
+const Cursor = require('./Cursor');
 const requestEvents = require('./request-events');
 const config = require('../../config');
 
@@ -16,7 +16,7 @@ const ignoreChannels = [
 ];
 
 class Client extends EventEmitter {
-  constructor (id, {
+  constructor (clientID, {
     secret,
     agent,
     protocol = 'http',
@@ -28,34 +28,18 @@ class Client extends EventEmitter {
       throw new Error('options.secret must be non-empty string');
 
     const normalizedProtocol = protocol.endsWith(':') ? protocol : `${protocol}:`;
-
-    super();
-    this.id = id;
-    this.polls = {}; // channel => Boolean ()
-    this.agent = agent || require(normalizedProtocol.slice(0, -1)).globalAgent;
-    this.apiRoot = url.format({
+    const agentArg = agent || require(normalizedProtocol.slice(0, -1)).globalAgent;
+    const apiRoot = {
       protocol: normalizedProtocol,
       hostname,
       port,
       pathname
-    });
-  }
-
-  request (channel, callback) {
-    const options = {
-      uri: this.apiRoot,
-      method: 'get',
-      agent: this.agent,
-      json: true,
-      gzip: true,
-      qs: {
-        secret: this.secret,
-        clientID: this.id,
-        channel
-      }
     };
 
-    requestEvents(options, callback);
+    super();
+    this.request = requestEvents({apiRoot, secret, agent: agentArg, clientID});
+    this.polls = {};   // which cursor is running (channel -> bool)
+    this.cursors = {}; // channel -> cursor
   }
 
   checkForDrain () {
@@ -68,13 +52,15 @@ class Client extends EventEmitter {
       return;
 
     this.polls[channel] = true;
+    const cursor = this.cursors[channel] = this.cursors[channel] || new Cursor(channel);
 
-    this.request(channel, (err, events) => {
+    this.request(cursor, (err, events) => {
       if (err)
         this.emit('error', channel, err);
       else
         events.forEach(e => this.emit(channel, e));
 
+      this.cursors[channel] = cursor.advance(events);
       this.polls[channel] = false;
 
       // If there are still listeners for this channel, keep polling.

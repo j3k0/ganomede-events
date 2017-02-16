@@ -2,29 +2,26 @@
 
 const url = require('url');
 const config = require('../../config');
+const Client = require('../../src/client/Client');
 
 describe('Client', () => {
-  let Client;
-  let requestEvents;
+  const createClient = () => {
+    const client = new Client('clientId', Object.assign(
+      {secret: config.secret},
+      url.parse('http://localhost:3000/events/v1')
+    ));
 
-  beforeEach(() => {
-    requestEvents = td.replace('../../src/client/request-events');
-    Client = require('../../src/client/Client');
-  });
-
-  const apiRoot = 'http://localhost:3000/events/v1';
-  const createClient = () => new Client('clientId', Object.assign(
-    {secret: config.secret},
-    url.parse(apiRoot)
-  ));
+    td.replace(client, 'request', td.function());
+    return client;
+  };
 
   it('keeps reqeusting new messages', (done) => {
     const client = createClient();
     let nEmits = 0;
     let nCalls = 0;
 
-    td.when(requestEvents(td.matchers.isA(Object), td.matchers.isA(Function)))
-      .thenDo((opts, cb) => {
+    td.when(client.request(td.matchers.isA(Object), td.matchers.isA(Function)))
+      .thenDo((cursor, cb) => {
         ++nCalls;
         setImmediate(cb, null, [
           {from: 'service', type: 'type'},
@@ -60,8 +57,8 @@ describe('Client', () => {
     let nEmits = 0;
     let nCalls = 0;
 
-    td.when(requestEvents(td.matchers.isA(Object), td.matchers.isA(Function)))
-      .thenDo((opts, cb) => {
+    td.when(client.request(td.matchers.isA(Object), td.matchers.isA(Function)))
+      .thenDo((cursor, cb) => {
         ++nCalls;
         setImmediate(cb, null, [
           expectedEvent,
@@ -94,9 +91,9 @@ describe('Client', () => {
     const calls = [];
     let nEmits = 0;
 
-    td.when(requestEvents(td.matchers.isA(Object), td.matchers.isA(Function)))
-      .thenDo((opts, cb) => {
-        calls.push(opts.qs.channel);
+    td.when(client.request(td.matchers.isA(Object), td.matchers.isA(Function)))
+      .thenDo((cursor, cb) => {
+        calls.push(cursor.channel);
         setImmediate(cb, null, [
           {from: 'ch', type: 'type'},
           {from: 'ch2', type: 'type'}

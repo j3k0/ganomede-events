@@ -4,7 +4,7 @@
   const {expect} = require('chai');
   const supertest = require('supertest');
   const createServer = require('../src/server');
-  const redis = require('fakeredis');
+  const redis = require('redis');
   const router = require('../src/events.router');
   const config = require('../config');
 

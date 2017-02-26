@@ -45,21 +45,22 @@ describe('events.store', () => {
   });
 
   describe('#loadEvents()', () => {
-    it('calls down to store implementation', (done) => {
-      const itemsStore = td.object(['loadItems']);
+    it('updates last fetched index and loads items in case after is explicit', (done) => {
+      const itemsStore = td.object(['setIndex', 'loadItems']);
       const subject = createStore({itemsStore});
 
-      td.when(itemsStore.loadItems('ch', 5, 100, td.callback))
+      td.when(itemsStore.loadItems('channel', 5, 100, td.callback))
         .thenCallback(null, [1, 2, 3]);
 
-      subject.loadEvents('ch', {after: 5, limit: 100, afterExplicitlySet: true}, (err, events) => {
+      subject.loadEvents('channel', {clientId: 'client', after: 5, limit: 100, afterExplicitlySet: true}, (err, events) => {
         expect(err).to.be.null;
         expect(events).to.eql([1, 2, 3]);
+        td.verify(itemsStore.setIndex('last-fetched:client:channel', 5, td.matchers.isA(Function)));
         done();
       });
     });
 
-    it('asks itemsStore for after with clientId', (done) => {
+    it('asks itemsStore for missing `after` with `clientId`', (done) => {
       const itemsStore = td.object(['getIndex', 'loadItems']);
       const subject = createStore({itemsStore});
 

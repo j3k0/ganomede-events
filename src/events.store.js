@@ -1,6 +1,9 @@
 'use strict';
 
 const async = require('async');
+const logger = require('./logger');
+
+const lastFetchedKey = (clientId, channel) => `last-fetched:${clientId}:${channel}`;
 
 class EventsStore {
   constructor (itemsStore) {
@@ -26,20 +29,34 @@ class EventsStore {
   }
 
   _load (channel, after, limit, callback) {
+    // Try updating last fetched index.
+
+
+    // Start loading stuff.
     this.items.loadItems(channel, after, limit, callback);
   }
 
   _loadWithLastFetched (clientId, channel, limit, callback) {
     async.waterfall([
-      (cb) => this.items.getIndex(`last-fetched:${clientId}:${channel}`, cb),
+      (cb) => this.items.getIndex(lastFetchedKey(clientId, channel), cb),
       (after, cb) => this._load(channel, after, limit, cb)
     ], callback);
   }
 
   loadEvents (channel, {clientId, after, limit, afterExplicitlySet}, callback) {
-    return afterExplicitlySet
-      ? this._load(channel, after, limit, callback)
-      : this._loadWithLastFetched(clientId, channel, limit, callback);
+    if (afterExplicitlySet) {
+      // In addition to loading items, treat this request as an ACK
+      // that client processed all the messages with id up to `after`
+      // and update last-fetched to be that.
+      const key = lastFetchedKey(clientId, channel);
+      this.items.setIndex(key, after, (err) => {
+        if (err)
+          logger.error('Failed to update "%s"', key, err);
+      });
+      return this._load(channel, after, limit, callback);
+    }
+
+    this._loadWithLastFetched(clientId, channel, limit, callback);
   }
 }
 

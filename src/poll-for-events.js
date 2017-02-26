@@ -2,9 +2,11 @@
 
 const restify = require('restify');
 
-module.exports = (store, poll, {clientId, channel, after, limit}, callback) => {
+module.exports = (store, poll, params, callback) => {
+  const {after, channel} = params;
+
   const loadEvents = (cb) =>
-    store.loadEvents(channel, after, limit, cb);
+    store.loadEvents(channel, params, cb);
 
   // Process the outcome of store.loadEvents,
   // returns true iff the middleware's job is over (next was called).

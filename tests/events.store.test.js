@@ -52,7 +52,7 @@ describe('events.store', () => {
       td.when(itemsStore.loadItems('ch', 5, 100, td.callback))
         .thenCallback(null, [1, 2, 3]);
 
-      subject.loadEvents('ch', 5, 100, (err, events) => {
+      subject.loadEvents('ch', {after: 5, limit: 100}, (err, events) => {
         expect(err).to.be.null;
         expect(events).to.eql([1, 2, 3]);
         done();

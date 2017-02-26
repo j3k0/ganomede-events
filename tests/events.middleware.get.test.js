@@ -32,14 +32,14 @@ describe('events.middleware.get', () => {
   // NON_EMPTY_CHANNEL:
   //  - has 1 event
   testChannels[NON_EMPTY_CHANNEL] = () => {
-    when(store.loadEvents(NON_EMPTY_CHANNEL, anything(), anything()))
+    when(store.loadEvents(NON_EMPTY_CHANNEL, anything()))
       .thenCallback(null, [NON_EMPTY_EVENT]);
   };
 
   // FAILING_LOAD_CHANNEL:
   //  - loading fails with a InternalServerError
   testChannels[FAILING_LOAD_CHANNEL] = () => {
-    when(store.loadEvents(FAILING_LOAD_CHANNEL, anything(), anything()))
+    when(store.loadEvents(FAILING_LOAD_CHANNEL, anything()))
       .thenCallback(new restify.InternalServerError());
   };
 
@@ -47,7 +47,7 @@ describe('events.middleware.get', () => {
   //  - has no events
   //  - polling will fail
   testChannels[FAILING_POLL_CHANNEL] = () => {
-    when(store.loadEvents(FAILING_POLL_CHANNEL, anything(), anything()))
+    when(store.loadEvents(FAILING_POLL_CHANNEL, anything()))
       .thenCallback(null, []);
     when(poll.listen(FAILING_POLL_CHANNEL))
       .thenCallback(new Error('poll.listen failed'));
@@ -57,7 +57,7 @@ describe('events.middleware.get', () => {
   //  - has no events
   //  - polling will timeout
   testChannels[EMPTY_CHANNEL] = () => {
-    when(store.loadEvents(EMPTY_CHANNEL, anything(), anything()))
+    when(store.loadEvents(EMPTY_CHANNEL, anything()))
       .thenCallback(null, []);
     when(poll.listen(EMPTY_CHANNEL))
       .thenCallback(null, null);
@@ -69,12 +69,12 @@ describe('events.middleware.get', () => {
   //  - then it will have 1 event
   testChannels[TRIGGER_CHANNEL] = () => {
 
-    when(store.loadEvents(TRIGGER_CHANNEL, anything(), anything()))
+    when(store.loadEvents(TRIGGER_CHANNEL, anything()))
       .thenCallback(null, []);
 
     when(poll.listen(TRIGGER_CHANNEL, anything()))
       .thenDo((channel, callback) => {
-        when(store.loadEvents(TRIGGER_CHANNEL, anything(), anything()))
+        when(store.loadEvents(TRIGGER_CHANNEL, anything()))
           .thenCallback(null, [TRIGGER_EVENT]);
         callback(null, TRIGGER_EVENT.id);
       });
@@ -84,7 +84,7 @@ describe('events.middleware.get', () => {
   beforeEach(() => {
 
     store = td.object(['loadEvents']);
-    when(store.loadEvents(anything(), anything(), anything()))
+    when(store.loadEvents(anything(), anything()))
       .thenCallback(new Error('unexpected store.loadEvents'));
 
     poll = td.object(['listen']);
@@ -216,7 +216,8 @@ describe('events.middleware.get', () => {
         clientId,
         channel,
         after: 0,
-        limit: 100
+        limit: 100,
+        afterExplicitlySet: false
       });
     });
 
@@ -246,6 +247,11 @@ describe('events.middleware.get', () => {
       t({channel: 42, clientId});
       t({channel: false, clientId});
       t({channel: undefined, clientId});
+    });
+
+    it('afterExplicitlySet is true, when after is found in params', () => {
+      expect(parseGetParams({channel, clientId, after: 1})).to.have.property('afterExplicitlySet', true);
+      expect(parseGetParams({channel, clientId})).to.have.property('afterExplicitlySet', false);
     });
   });
 });

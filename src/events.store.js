@@ -28,8 +28,8 @@ const createStore = ({
     },
 
   // Retrieve all events from a channel, with ids bigger than the given one
-    loadEvents: (channel, id, limit, callback) => {
-      itemsStore.loadItems(channel, id, limit, callback);
+    loadEvents: (channel, {clientId, after, limit, afterExplicitlySet}, callback) => {
+      itemsStore.loadItems(channel, after, limit, callback);
     }
   };};
 

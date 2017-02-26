@@ -1,5 +1,7 @@
 'use strict';
 
+const hasOwnProperty = (obj, prop) => Object.hasOwnProperty.call(obj, prop);
+
 const toInt = (something, defaultValue = NaN) => {
   const str = String(something);
   const int = parseInt(str, 10);
@@ -38,7 +40,13 @@ const parseGetParams = (params = {}) => {
   const after = parseAfter(params.after);
   const limit = parseLimit(params.limit);
 
-  return {clientId, channel, after, limit};
+  return {
+    clientId,
+    channel,
+    after,
+    limit,
+    afterExplicitlySet: hasOwnProperty(params, 'after')
+  };
 };
 
 const parsePostParams = (params = {}) => {
@@ -58,7 +66,7 @@ const parsePostParams = (params = {}) => {
   if (!type)
     return new Error('Invalid type');
 
-  const hasData = params.hasOwnProperty('data');
+  const hasData = hasOwnProperty(params, 'data');
   const data = params.data;
 
   if (hasData) {

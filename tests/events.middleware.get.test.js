@@ -10,7 +10,6 @@ const {verify, when} = td;
 const calledOnce = {times: 1, ignoreExtraArgs: true};
 
 describe('events.middleware.get', () => {
-
   let poll;
   let store;
   let middleware;
@@ -104,6 +103,7 @@ describe('events.middleware.get', () => {
 
   const validRequest = () => ({
     params: {
+      clientId: 'test-client',
       channel: 'channel',
       after: '0',
       limit: '100'
@@ -170,5 +170,83 @@ describe('events.middleware.get', () => {
     verify(log.error(), calledOnce);
   });
 
+  describe('parseGetParams()', () => {
+    const parseGetParams = require('../src/parse-get-params');
+    const clientId = 'test';
+    const channel = 'channel';
+
+    it('parses after to be int within [0, MAX_SAFE_INTEGER]', () => {
+      const t = (desiredAfter, expected) => {
+        const actual = parseGetParams({clientId, channel, after: desiredAfter});
+        expect(actual.after).to.equal(expected);
+      };
+
+      // acceptable
+      t(0, 0);
+      t(50, 50);
+      t(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
+      // wierd values default to byDefault
+      t(undefined, 0);
+      t(-1, 0);
+      t('wierd', 0);
+      t({}, 0);
+      t(Number.MAX_SAFE_INTEGER + 1, 0);
+    });
+
+    it('parses liimt to be int within [1, 100]', () => {
+      const t = (desiredLimit, expected) => {
+        const actual = parseGetParams({clientId, channel, limit: desiredLimit});
+        expect(actual.limit).to.equal(expected);
+      };
+
+      // acceptable
+      t(1, 1);
+      t(50, 50);
+      t(100, 100);
+      // wierd values default to byDefault
+      t(undefined, 100);
+      t(-1, 100);
+      t('wierd', 100);
+      t({}, 100);
+      t(500, 100);
+    });
+
+    it('defaults after/limit to 0/100', () => {
+      expect(parseGetParams({clientId, channel})).to.eql({
+        clientId,
+        channel,
+        after: 0,
+        limit: 100
+      });
+    });
+
+    it('client id must be non-empty string', () => {
+      const t = (input) => {
+        const actual = parseGetParams(input);
+        expect(actual).to.be.instanceof(Error);
+        expect(actual.message).to.equal('Invalid Client ID');
+      };
+
+      t({channel});
+      t({clientId: '', channel});
+      t({clientId: 42, channel});
+      t({clientId: false, channel});
+      t({clientId: undefined, channel});
+    });
+
+    it('channel must be non-empty string', () => {
+      const t = (input) => {
+        const actual = parseGetParams(input);
+        expect(actual).to.be.instanceof(Error);
+        expect(actual.message).to.equal('Invalid Channel');
+      };
+
+      t({clientId});
+      t({channel: '', clientId});
+      t({channel: 42, clientId});
+      t({channel: false, clientId});
+      t({channel: undefined, clientId});
+    });
+  });
 });
 // vim: ts=2 sw=2 et

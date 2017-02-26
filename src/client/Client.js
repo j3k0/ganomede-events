@@ -3,7 +3,7 @@
 const {EventEmitter} = require('events');
 const lodash = require('lodash');
 const Cursor = require('./Cursor');
-const requestEvents = require('./request-events');
+const requestEvents = require('./request');
 const config = require('../../config');
 
 // Some events are special, and have nothing to do with our channles,
@@ -54,7 +54,7 @@ class Client extends EventEmitter {
     this.polls[channel] = true;
     const cursor = this.cursors[channel] = this.cursors[channel] || new Cursor(channel);
 
-    this.request(cursor, (err, events) => {
+    this.request.get(cursor, (err, events) => {
       if (err)
         this.emit('error', channel, err);
       else
@@ -80,6 +80,14 @@ class Client extends EventEmitter {
       this.startPolling(channel);
 
     super.on(channel, handler);
+  }
+
+  send (type, data, callback) {
+    const args = (arguments.length === 2)
+      ? [type, null, data]
+      : [type, data, callback];
+
+    this.request.post(...args);
   }
 }
 

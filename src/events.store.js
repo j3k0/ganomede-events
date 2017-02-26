@@ -2,35 +2,33 @@
 
 const async = require('async');
 
-const createStore = ({
-  itemsStore
-}) => {
+class EventsStore {
+  constructor (itemsStore) {
+    this.items = itemsStore;
+  }
 
-  return {
+  addEvent (channel, eventArg, callback) {
+    async.waterfall([
+      (cb) => this.items.nextIndex(channel, cb),
+      (id, cb) => {
+        const event = Object.assign({
+          id,
+          timestamp: Date.now(),
+        }, eventArg);
 
-  // Store a new event in a channel
-    addEvent: (channel, eventArg, callback) => {
-      async.waterfall([
-        (cb) => itemsStore.getIndex(channel, cb),
-        (id, cb) => {
-          const event = Object.assign({
-            id,
-            timestamp: Date.now(),
-          }, eventArg);
+        this.items.addItem(channel, event, (err) => {
+          return err
+            ? cb(err)
+            : cb(null, event);
+        });
+      }
+    ], callback);
+  }
 
-          itemsStore.addItem(channel, event, (err) => {
-            return err
-              ? cb(err)
-              : cb(null, event);
-          });
-        }
-      ], callback);
-    },
+  loadEvents (channel, {clientId, after, limit, afterExplicitlySet}, callback) {
+    this.items.loadItems(channel, after, limit, callback);
+  }
+}
 
-  // Retrieve all events from a channel, with ids bigger than the given one
-    loadEvents: (channel, {clientId, after, limit, afterExplicitlySet}, callback) => {
-      itemsStore.loadItems(channel, after, limit, callback);
-    }
-  };};
-
+const createStore = ({itemsStore}) => new EventsStore(itemsStore);
 module.exports = {createStore};

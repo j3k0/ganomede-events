@@ -9,19 +9,20 @@ const KEYS = 'keys';
 
 const key = (group, tag) => `${group}:${tag}`;
 
-const createStore = ({
-  redisClient
-}) => ({
+class RedisStore {
+  constructor (redisClient) {
+    this.redis = redisClient;
+  }
 
-  getIndex: (channel, callback) => {
-    redisClient.incr(`${INDICES}:${channel}`, callback);
-  },
+  nextIndex (channel, callback) {
+    this.redis.incr(`${INDICES}:${channel}`, callback);
+  }
 
-  addItem: (channel, json, callback) => {
+  addItem (channel, json, callback) {
     const hashKey = key(channel, json.id);
     const sortKey = key(channel, KEYS);
 
-    redisClient.multi()
+    this.redis.multi()
       .set(hashKey, JSON.stringify(json), 'NX')
       .zadd(sortKey, 'NX', json.id, hashKey)
       .exec((err, results) => {
@@ -33,16 +34,16 @@ const createStore = ({
 
         callback(null, results);
       });
-  },
+  }
 
-  loadItems: (channel, start, limit, callback) => {
+  loadItems (channel, start, limit, callback) {
     const retrieveKeys = (callback) =>
-    redisClient.zrangebyscore(key(channel, KEYS),
+    this.redis.zrangebyscore(key(channel, KEYS),
       utils.addOne(start), '+inf', 'LIMIT', 0, limit, callback);
 
     const pullAllItems = (keys, callback) => {
       return keys.length > 0
-        ? redisClient.mget(keys, callback)
+        ? this.redis.mget(keys, callback)
         : callback(null, []);
     };
 
@@ -56,6 +57,7 @@ const createStore = ({
       callback(err, items);
     });
   }
-});
+}
 
+const createStore = ({redisClient}) => new RedisStore(redisClient);
 module.exports = {createStore};

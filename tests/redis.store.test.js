@@ -11,7 +11,7 @@ describe('redis.store', () => {
   after(done => redisClient.flushdb(done));
   after(done => redisClient.quit(done));
 
-  describe('#getIndex()', () => {
+  describe('#nextIndex()', () => {
     it('returns index for a channel', (done) => {
       const redisClient = td.object(['incr']);
       const store = createStore({redisClient});
@@ -19,7 +19,7 @@ describe('redis.store', () => {
       td.when(redisClient.incr('indices:channel', td.callback))
         .thenCallback(null, 1);
 
-      store.getIndex('channel', done);
+      store.nextIndex('channel', done);
     });
   });
 

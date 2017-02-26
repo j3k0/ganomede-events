@@ -8,7 +8,7 @@ describe('events.store', () => {
     let actualEvent;
 
     before((done) => {
-      const itemsStore = td.object(['getIndex', 'addItem']);
+      const itemsStore = td.object(['nextIndex', 'addItem']);
       const subject = createStore({itemsStore});
       const expectedHeader = td.matchers.contains({
         id: 5,
@@ -17,7 +17,7 @@ describe('events.store', () => {
 
       td.replace(Date, 'now', () => now);
 
-      td.when(itemsStore.getIndex('channel', td.callback))
+      td.when(itemsStore.nextIndex('channel', td.callback))
         .thenCallback(null, 5);
 
       td.when(itemsStore.addItem('channel', expectedHeader, td.callback))

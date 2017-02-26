@@ -1,15 +1,5 @@
 'use strict';
 
-// restify middleware that adds an event to a channel
-//
-// Request body is JSON with fields:
-//  - channel: string
-//             channel to load events from
-//  - from, type, data: event properties (see README.md)
-//
-// Reponds with a JSON event with its allocated id
-//
-const eventsStore = require('./events.store');
 const restify = require('restify');
 const _ = require('lodash');
 
@@ -28,7 +18,7 @@ const createMiddleware = ({
   store.addEvent(channel, event, (err, event) => {
 
     if (err)
-      return next(convertError(err));
+      return next(err);
 
     res.json(event);
     next();
@@ -41,16 +31,6 @@ const createMiddleware = ({
         log.error(err, 'poll.trigger failed');
     });
   });
-};
-
-const isInvalidContent = (err) =>
-  err === eventsStore.errors.invalidEvent ||
-  err === eventsStore.errors.invalidChannel;
-
-const convertError = (err) => {
-  return isInvalidContent(err)
-    ? new restify.InvalidContentError(err.message)
-    : err;
 };
 
 module.exports = {createMiddleware};

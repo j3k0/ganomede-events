@@ -14,7 +14,6 @@
 //
 
 const restify = require('restify');
-const eventsStore = require('./events.store');
 const parseGetParams = require('./parse-get-params');
 const pollForEvents = require('./poll-for-events');
 
@@ -31,23 +30,12 @@ const createMiddleware = ({
   pollForEvents(store, poll, params, (err, events) => {
     if (err) {
       log.error(err);
-      return next(convertError(err));
+      return next(err);
     }
 
     res.json(events);
     next();
   });
-};
-
-const convertError = (err) => {
-  return isInvalidContent(err)
-    ? new restify.InvalidContentError(err.message)
-    : err;
-};
-
-const isInvalidContent = (err) => {
-  return err && (err.message === eventsStore.errors.invalidChannel
-    || err.message === eventsStore.errors.invalidAfterId);
 };
 
 module.exports = {createMiddleware};

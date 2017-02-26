@@ -1,35 +1,7 @@
 'use strict';
 
-const identity = (x) => x;
+const async = require('async');
 
-// Error codes
-const errors = {
-  invalidEvent: 'invalid event',
-  invalidChannel: 'invalid channel',
-  invalidAfterId: 'invalid after ID'
-};
-
-const isValidEvent = (event) =>
-  typeof event === 'object' && event !== null;
-
-const isValidChannel = (channel) =>
-  typeof channel === 'string';
-
-const isValidAfterId = (after) => {
-  return after === undefined ||
-    typeof after === 'number' ||
-    typeof after === 'string' && !isNaN(parseInt(after));
-};
-
-// Initializes an events store.
-//
-// depends upon an `itemsStore`,  an object with the following methods:
-//
-//    - loadItems(channel, id, callback)
-//    - addItem(channel, event, itemFactory, callback)
-//
-// (see redis.store.js for a redis implementation of an item store)
-//
 const createStore = ({
   itemsStore
 }) => {
@@ -37,55 +9,28 @@ const createStore = ({
   return {
 
   // Store a new event in a channel
-    addEvent: (channel, event, callback) => {
+    addEvent: (channel, eventArg, callback) => {
+      async.waterfall([
+        (cb) => itemsStore.getIndex(channel, cb),
+        (id, cb) => {
+          const event = Object.assign({
+            id,
+            timestamp: Date.now(),
+          }, eventArg);
 
-      if (!isValidEvent(event))
-        return callback(new Error(errors.invalidEvent));
-
-      if (!isValidChannel(channel))
-        return callback(new Error(errors.invalidChannel));
-
-      const itemFactory = (data, index) => ({
-        id: index,
-        timestamp: new Date().getTime(),
-        from: data.from,
-        type: data.type,
-        data: data.data
-      });
-
-      itemsStore.addItem(channel, event, itemFactory, callback);
+          itemsStore.addItem(channel, event, (err) => {
+            return err
+              ? cb(err)
+              : cb(null, event);
+          });
+        }
+      ], callback);
     },
 
   // Retrieve all events from a channel, with ids bigger than the given one
     loadEvents: (channel, id, limit, callback) => {
-
-      callback = callback || identity;
-
-      if (!isValidChannel(channel))
-        return callback(new Error(errors.invalidChannel));
-
-      if (!isValidAfterId(id))
-        return callback(new Error(errors.invalidAfterId));
-
-      const formatEvent = (event) => ({
-        id: parseInt(event.id),
-        timestamp: parseInt(event.timestamp),
-        type: event.type,
-        from: event.from,
-        data: event.data
-      });
-
-      const done = (err, items) => {
-        return err
-          ? callback(err)
-          : callback(null, items.map(formatEvent));
-      };
-
-      itemsStore.loadItems(channel, id, limit, done);
+      itemsStore.loadItems(channel, id, limit, callback);
     }
   };};
 
-module.exports = {
-  createStore,
-  errors
-};
+module.exports = {createStore};

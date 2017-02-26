@@ -9,6 +9,7 @@ describe('redis.store', () => {
   const store = createStore({redisClient});
 
   after(done => redisClient.flushdb(done));
+  after(done => redisClient.quit(done));
 
   describe('#getIndex()', () => {
     it('returns index for a channel', (done) => {

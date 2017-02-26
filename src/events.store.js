@@ -25,8 +25,21 @@ class EventsStore {
     ], callback);
   }
 
-  loadEvents (channel, {clientId, after, limit, afterExplicitlySet}, callback) {
+  _load (channel, after, limit, callback) {
     this.items.loadItems(channel, after, limit, callback);
+  }
+
+  _loadWithLastFetched (clientId, channel, limit, callback) {
+    async.waterfall([
+      (cb) => this.items.getIndex(`last-fetched:${clientId}:${channel}`, cb),
+      (after, cb) => this._load(channel, after, limit, cb)
+    ], callback);
+  }
+
+  loadEvents (channel, {clientId, after, limit, afterExplicitlySet}, callback) {
+    return afterExplicitlySet
+      ? this._load(channel, after, limit, callback)
+      : this._loadWithLastFetched(clientId, channel, limit, callback);
   }
 }
 

@@ -11,6 +11,30 @@ describe('redis.store', () => {
   after(done => redisClient.flushdb(done));
   after(done => redisClient.quit(done));
 
+  describe('#setIndex()', () => {
+    it('sets key to hold passed index', (done) => {
+      store.setIndex('something', 42, done);
+    });
+  });
+
+  describe('#getIndex()', () => {
+    it('returns number saved under key', (done) => {
+      store.getIndex('something', (err, index) => {
+        expect(err).to.be.null;
+        expect(index).to.equal(42);
+        done();
+      });
+    });
+
+    it('returns 0 for missing keys', (done) => {
+      store.getIndex('missing', (err, index) => {
+        expect(err).to.be.null;
+        expect(index).to.equal(0);
+        done();
+      });
+    });
+  });
+
   describe('#nextIndex()', () => {
     it('returns index for a channel', (done) => {
       const redisClient = td.object(['incr']);

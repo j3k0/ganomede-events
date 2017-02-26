@@ -14,6 +14,18 @@ class RedisStore {
     this.redis = redisClient;
   }
 
+  getIndex (key, callback) {
+    this.redis.get(key, (err, int) => {
+      return err
+        ? callback(err)
+        : callback(null, int ? parseInt(int, 10) : 0);
+    });
+  }
+
+  setIndex (key, idx, callback) {
+    this.redis.set(key, String(idx), (err) => callback(err));
+  }
+
   nextIndex (channel, callback) {
     this.redis.incr(`${INDICES}:${channel}`, callback);
   }

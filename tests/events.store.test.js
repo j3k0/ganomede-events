@@ -52,7 +52,24 @@ describe('events.store', () => {
       td.when(itemsStore.loadItems('ch', 5, 100, td.callback))
         .thenCallback(null, [1, 2, 3]);
 
-      subject.loadEvents('ch', {after: 5, limit: 100}, (err, events) => {
+      subject.loadEvents('ch', {after: 5, limit: 100, afterExplicitlySet: true}, (err, events) => {
+        expect(err).to.be.null;
+        expect(events).to.eql([1, 2, 3]);
+        done();
+      });
+    });
+
+    it('asks itemsStore for after with clientId', (done) => {
+      const itemsStore = td.object(['getIndex', 'loadItems']);
+      const subject = createStore({itemsStore});
+
+      td.when(itemsStore.getIndex('last-fetched:client:channel', td.callback))
+        .thenCallback(null, 5);
+
+      td.when(itemsStore.loadItems('channel', 5, 99, td.callback))
+        .thenCallback(null, [1, 2, 3]);
+
+      subject.loadEvents('channel', {clientId: 'client', limit: 99}, (err, events) => {
         expect(err).to.be.null;
         expect(events).to.eql([1, 2, 3]);
         done();

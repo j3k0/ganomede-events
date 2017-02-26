@@ -4,6 +4,7 @@
 
 const td = require('testdouble');
 const restify = require('restify');
+const {parseGetParams} = require('../src/parse-http-params');
 
 const {anything, isA} = td.matchers;
 const {verify, when} = td;
@@ -171,7 +172,6 @@ describe('events.middleware.get', () => {
   });
 
   describe('parseGetParams()', () => {
-    const parseGetParams = require('../src/parse-get-params');
     const clientId = 'test';
     const channel = 'channel';
 

@@ -1,19 +1,18 @@
 'use strict';
 
 const restify = require('restify');
-const _ = require('lodash');
+const {parsePostParams} = require('./parse-http-params');
 
 const createMiddleware = ({
   poll = require('./poll'),
   log = require('./logger'),
   store
 }) => (req, res, next) => {
+  const params = parsePostParams(req.body);
+  if (params instanceof Error)
+    return next(new restify.InvalidContentError(params.message));
 
-  const channel = req.body.channel;
-  const event = _.pick(req.body, 'from', 'type', 'data');
-
-  if (!channel)
-    return next(new restify.InvalidContentError('channel missing'));
+  const {channel, event} = params;
 
   store.addEvent(channel, event, (err, event) => {
 

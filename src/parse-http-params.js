@@ -26,7 +26,7 @@ const nonEmptyString = (paramValue, defaultValue = undefined) => {
 const parseAfter = toIntWithinRange({min: 0, byDefault: 0});
 const parseLimit = toIntWithinRange({min: 1, max: 100, byDefault: 100});
 
-module.exports = (params = {}) => {
+const parseGetParams = (params = {}) => {
   const clientId = nonEmptyString(params.clientId);
   if (!clientId)
     return new Error('Invalid Client ID');
@@ -39,4 +39,42 @@ module.exports = (params = {}) => {
   const limit = parseLimit(params.limit);
 
   return {clientId, channel, after, limit};
+};
+
+const parsePostParams = (params = {}) => {
+  const clientId = nonEmptyString(params.clientId);
+  if (!clientId)
+    return new Error('Invalid Client ID');
+
+  const channel = nonEmptyString(params.channel);
+  if (!channel)
+    return new Error('Invalid Channel');
+
+  const from = nonEmptyString(params.from);
+  if (!from)
+    return new Error('Invalid from');
+
+  const type = nonEmptyString(params.type);
+  if (!type)
+    return new Error('Invalid type');
+
+  const hasData = params.hasOwnProperty('data');
+  const data = params.data;
+
+  if (hasData) {
+    const dataOk = data && (typeof data === 'object');
+    if (!dataOk)
+      return new Error('Invalid data');
+  }
+
+  const event = hasData
+    ? {type, from, data}
+    : {type, from};
+
+  return {clientId, channel, event};
+};
+
+module.exports = {
+  parseGetParams,
+  parsePostParams
 };

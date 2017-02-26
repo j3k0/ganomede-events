@@ -14,7 +14,7 @@
 //
 
 const restify = require('restify');
-const parseGetParams = require('./parse-get-params');
+const {parseGetParams} = require('./parse-http-params');
 const pollForEvents = require('./poll-for-events');
 
 const createMiddleware = ({

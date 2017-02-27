@@ -16,7 +16,7 @@ const ignoreChannels = [
 ];
 
 class Client extends EventEmitter {
-  constructor (clientID, {
+  constructor (clientId, {
     secret,
     agent,
     protocol = 'http',
@@ -37,7 +37,7 @@ class Client extends EventEmitter {
     };
 
     super();
-    this.request = requestEvents({apiRoot, secret, agent: agentArg, clientID});
+    this.request = requestEvents({apiRoot, secret, agent: agentArg, clientId});
     this.polls = {};   // which cursor is running (channel -> bool)
     this.cursors = {}; // channel -> cursor
   }

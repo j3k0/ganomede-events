@@ -19,7 +19,7 @@ describe('.request()', () => {
       apiRoot: 'http://example.com/events',
       secret: 'qwerty',
       agent: http.globalAgent,
-      clientID: 'me'
+      clientId: 'me'
     };
 
     const expectedOptions = td.matchers.argThat(arg => {
@@ -29,7 +29,7 @@ describe('.request()', () => {
         agent: baseOpts.agent,
         qs: {
           secret: 'qwerty',
-          clientID: 'me',
+          clientId: 'me',
           channel: 'channel',
           limit: 10
         }
@@ -52,7 +52,7 @@ describe('.request()', () => {
       apiRoot: 'http://example.com/events',
       secret: 'qwerty',
       agent: http.globalAgent,
-      clientID: 'me'
+      clientId: 'me'
     };
 
     const expectedOptions = td.matchers.argThat(arg => {
@@ -62,7 +62,7 @@ describe('.request()', () => {
         agent: baseOpts.agent,
         body: {
           secret: 'qwerty',
-          clientID: 'me',
+          clientId: 'me',
           channel: 'me:event-type',
           from: 'me',
           type: 'event-type',

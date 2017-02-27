@@ -3,7 +3,7 @@
 const request = require('request');
 const util = require('util');
 
-module.exports = ({apiRoot, secret, agent, clientID}) => ({
+module.exports = ({apiRoot, secret, agent, clientId}) => ({
   _opts (method, payload, callback) {
     return {
       method,
@@ -16,7 +16,7 @@ module.exports = ({apiRoot, secret, agent, clientID}) => ({
   },
 
   request (method, payload, callback) {
-    const data = Object.assign({clientID, secret}, payload);
+    const data = Object.assign({clientId, secret}, payload);
     request(this._opts(method, data), (err, res, body) => {
       if (err)
         return callback(err);
@@ -35,8 +35,8 @@ module.exports = ({apiRoot, secret, agent, clientID}) => ({
   },
 
   post (type, data, callback) {
-    const channel = `${clientID}:${type}`;
-    const body = {channel, from: clientID, type};
+    const channel = `${clientId}:${type}`;
+    const body = {channel, from: clientId, type};
 
     if (data)
       body.data = data;

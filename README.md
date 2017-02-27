@@ -50,22 +50,29 @@ You can also play around with provided `docker-compose.yml` and `Dockerfile`.
 
 ### Client Library
 
-`Client` is an [`EventEmitter`](https://nodejs.org/docs/latest/api/events.html#events_class_eventemitter). When you [register handler for an event](https://nodejs.org/docs/latest/api/events.html#events_emitter_on_eventname_listener), it will treat `eventName` as channel you'd like to listen for events on (and start issuing HTTP(S) request). When you remove all listeners for a channel, HTTP(S) request will stop (but request currently running won't be aborted!).
+`Client` is an [`EventEmitter`](https://nodejs.org/docs/latest/api/events.html#events_class_eventemitter). When you [register handler for an event](https://nodejs.org/docs/latest/api/events.html#events_emitter_on_eventname_listener), it will treat `eventName` as channel you'd like to listen for events on (and start issuing HTTP(S) request). When you remove all listeners for a channel, future HTTP(S) request will stop (but request currently running won't be aborted!).
 
 ```js
 const {Client} = require('ganomede-events');
 const clientId = 'mailchimp-synchronizer';
 const events = new Client(clientId, options); // see Client API for more
 
-// Send event to a specific @channel with @data.
+// Send @event to a specific @channel with
+//   Client#send(channel, event[, callback])
 events.send('users/v1:add', {
+  from: 'users/v1',
+  type: 'add',
+  data: {
     thing: 'abc',
     stuff: 123,
-    blob: [ 12, 13, 14 ]
+    blob: [12, 13, 14]
+  }
 });
 
 // Our event handler
 const handler = (event) => {
+  console.dir(event);
+  //
     console.log("id: " + event.id);
     console.log("from: " + event.from + " == users/v1");
     console.log("type: " + event.type + " == add");
@@ -83,7 +90,7 @@ events.on('users/v1:add', handler); // or specific type
 events.removeListener('users/v1:add', handler); // remove specific handlers
 
 // `error` event is special (like some others, see below for more),
-// it won't poll `error` channel.
+// it won't poll `error` channel and you can't send events to that channel.
 // (it will also throw if no handlers are registred)
 events.on('error', (channel, error) => { /* handle HTTP(S) error */ });
 ```
@@ -101,7 +108,7 @@ Creates the pub/sub client.
  * `clientId: string`
     * requried
     * a unique identifier for the client
-    * used on the server to save/restore state, required
+    * used on the server to save/restore state
 
  * `options: object` with the following fields:
     * `secret: string`
@@ -123,57 +130,41 @@ Creates the pub/sub client.
       * endpoint's pathname
       * **default** `config.http.prefix + '/events'` (`'/events/v1/events'`)
 
-### client.send(channel, data)
+### `Client#send(channel, event[, callback])`
 
 Publish an event to a given channel.
 
 **Arguments**
 
- * `channel: string`
-   * the channel to publish to
- * `data: object`
-   * custom user-specified data
+ * `channel: string` requred — the channel to publish to
+ * `event: object` requred — must contain 2 string props: `from` and `type` specifying sender and type of an event. You can also add `data` prop containing any truthy object with custom data you'd like to attach to the event.
+ * `callback: Function` — will receive two arguments: `(error, header)`, header will containt Event ID and Timestamp (assigned by server). IDs are specific to the channel, so it is possible to have 2 events with ID `1` in different channels.
 
-### client.on(channel, handler)
+### `Client#on(channel, handler)`
 
 Start receiving events from a given channel.
 
-Some `channel`s are special, and you can not listen for those (don't name them that):
+**Arguments**
+
+  - `channel: string` required;
+  - `handler: Function` required; will receive new events, signature is `(event, channel)`. The shape of event is the same as in `#send()`.
+
+Some `channel`s are special, and you can not listen or send messages to those:
 
   - [`newListener`](https://nodejs.org/docs/latest/api/events.html#events_event_newlistener) / [`removeListener`](https://nodejs.org/docs/latest/api/events.html#events_event_removelistener) — `EventEmitter`'s events;
-  - `error` — used to handle HTTP(S) errors, handler invoked with `(channel, error)`. Non-200 statuses are errors.
+  - `error` — used to handle HTTP(S) errors, handler invoked with `(error, channel)`. Non-200 statuses are errors.
   - `drain` — when there are no channel-listeners and all HTTP(S) request are finished.
 
-**Arguments**
+### `Client#removeListener(eventName, handler)`
 
- * `channel: string`
-   * the channel to listen to
-   * `"*"` for all channels
- * `handler: function (event)`
-   * handle messages posted on the given channel.
-   * receives as argument an event object, with the following fields:
-     * `id: int`
-       * strictly incrementing unique ID for this event
-     * `channel: string`
-       * the channel the event was posted to
-     * `timestamp: int`
-       * milliseconds elapsed between Epoch and posting of the event
-     * `data: object`
-       * custom user-specified data
+Same as [`EventEmitter#removeListener()`](https://nodejs.org/dist/latest-v7.x/docs/api/events.html#events_emitter_removelistener_eventname_listener).
 
-### client.removeListener(channel, handler)
-
-Stop receiving events from a given channel.
-
-**Note** that any requests in-progress will finish, and events may be discarded.
+If there are no listeners left for a particular channel, no new HTTP(S) request will be issued. **Note** that any requests in-progress will finish, and events will be discarded.
 
 **Arguments**
 
  * `channel: string`
-   * the channel to stop listening to
-   * `"*"` for all channels
- * `handler: function(event)`
-   * the handler to unsusbribe
+ * `handler: Function`
 
 ## Contribute
 

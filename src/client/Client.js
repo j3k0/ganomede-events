@@ -6,6 +6,8 @@ const Cursor = require('./Cursor');
 const requestEvents = require('./request');
 const config = require('../../config');
 
+const noop = () => {};
+
 // Some events are special, and have nothing to do with our channles,
 // we should not start HTTP request for them. should not monitor them:
 const ignoreChannels = [
@@ -56,9 +58,9 @@ class Client extends EventEmitter {
 
     this.request.get(cursor, (err, events) => {
       if (err)
-        this.emit('error', channel, err);
+        this.emit('error', err, channel);
       else
-        events.forEach(e => this.emit(channel, e));
+        events.forEach(event => this.emit(channel, event, channel));
 
       this.cursors[channel] = cursor.advance(events);
       this.polls[channel] = false;
@@ -82,9 +84,12 @@ class Client extends EventEmitter {
     super.on(channel, handler);
   }
 
-  send (channel, eventArg, callback) {
+  send (channel, eventArg, callback = noop) {
     const {from, type, data} = eventArg;
     const hasData = eventArg.hasOwnProperty('data');
+
+    if (ignoreChannels.includes(channel))
+      return setImmediate(callback, new TypeError(`channel can not be any of ${ignoreChannels.join(', ')}`));
 
     if ((typeof from !== 'string') || (from.length === 0))
       return setImmediate(callback, new TypeError('from must be non-empty string'));

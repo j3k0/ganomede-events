@@ -45,6 +45,9 @@ describe('.request()', () => {
   });
 
   it('#post() sends events', (done) => {
+    const clientId = 'not-the-same-as-from-necessarily';
+    const channel = 'some-channel-with-events';
+    const from = 'service/v1';
     const type = 'event-type';
     const data = {something: true};
     const header = {id: 1, timestamp: Date.now()};
@@ -52,7 +55,7 @@ describe('.request()', () => {
       apiRoot: 'http://example.com/events',
       secret: 'qwerty',
       agent: http.globalAgent,
-      clientId: 'me'
+      clientId
     };
 
     const expectedOptions = td.matchers.argThat(arg => {
@@ -62,9 +65,9 @@ describe('.request()', () => {
         agent: baseOpts.agent,
         body: {
           secret: 'qwerty',
-          clientId: 'me',
-          channel: 'me:event-type',
-          from: 'me',
+          clientId: 'not-the-same-as-from-necessarily',
+          channel: 'some-channel-with-events',
+          from: 'service/v1',
           type: 'event-type',
           data: {something: true}
         }
@@ -76,7 +79,7 @@ describe('.request()', () => {
       .thenDo((options, cb) => setImmediate(cb, null, {statusCode: 200}, header));
 
     const obj = requestEvents(baseOpts);
-    obj.post(type, data, (err, header) => {
+    obj.post(channel, {from, type, data}, (err, header) => {
       expect(err).to.be.null;
       expect(header).to.eql(header);
       done();

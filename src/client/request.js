@@ -34,13 +34,8 @@ module.exports = ({apiRoot, secret, agent, clientId}) => ({
     this.request('get', cursor.toQuery(), callback);
   },
 
-  post (type, data, callback) {
-    const channel = `${clientId}:${type}`;
-    const body = {channel, from: clientId, type};
-
-    if (data)
-      body.data = data;
-
+  post (channel, event, callback) {
+    const body = Object.assign({channel}, event);
     this.request('post', body, callback);
   }
 });

@@ -137,24 +137,10 @@ describe('Client', () => {
       const client = createClient();
       const header = {id: 1, timestamp: Date.now()};
 
-      td.when(client.request.post('event-type', {something: true}, td.callback))
+      td.when(client.request.post('someplace', {from: 'me', type: 'x'}, td.callback))
         .thenCallback(null, header);
 
-      client.send('event-type', {something: true}, (err, header) => {
-        expect(err).to.be.null;
-        expect(header).to.eql(header);
-        done();
-      });
-    });
-
-    it('sends events with no data', (done) => {
-      const client = createClient();
-      const header = {id: 1, timestamp: Date.now()};
-
-      td.when(client.request.post('event-type', null, td.callback))
-        .thenCallback(null, header);
-
-      client.send('event-type', (err, header) => {
+      client.send('someplace', {from: 'me', type: 'x'}, (err, header) => {
         expect(err).to.be.null;
         expect(header).to.eql(header);
         done();

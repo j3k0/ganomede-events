@@ -82,12 +82,24 @@ class Client extends EventEmitter {
     super.on(channel, handler);
   }
 
-  send (type, data, callback) {
-    const args = (arguments.length === 2)
-      ? [type, null, data]
-      : [type, data, callback];
+  send (channel, eventArg, callback) {
+    const {from, type, data} = eventArg;
+    const hasData = eventArg.hasOwnProperty('data');
 
-    this.request.post(...args);
+    if ((typeof from !== 'string') || (from.length === 0))
+      return setImmediate(callback, new TypeError('from must be non-empty string'));
+
+    if ((typeof type !== 'string') || (type.length === 0))
+      return setImmediate(callback, new TypeError('type must be non-empty string'));
+
+    if (hasData && (!data || (typeof data !== 'object')))
+      return setImmediate(callback, new TypeError('data must be non-falsy object'));
+
+    const event = hasData
+      ? {from, type, data}
+      : {from, type};
+
+    this.request.post(channel, event, callback);
   }
 }
 

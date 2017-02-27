@@ -5,6 +5,7 @@
   "description": "NodeJS pub/sub library using ganomede-notifications",
   "main": "index.js",
   "scripts": {
+    "prepublish": "npm run lint && npm run test",
     "start": "node index.js",
     "startw": "nodemon --watch src/ --watch index.js --watch config.js --exec \"npm start\"",
     "test": "API_SECRET=1 BUNYAN_LEVEL=ERROR mocha --bail --no-exit --throw-deprecation tests/helper.js 'tests/**/*.test.js'",

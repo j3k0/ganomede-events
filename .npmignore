@@ -1,7 +1,7 @@
 tests/
 .eslintrc
 .gitignore
-.circle.yml
+circle.yml
 docker-compose.yml
 Dockerfile
 *.sublime-*

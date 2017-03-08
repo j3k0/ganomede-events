@@ -26,6 +26,4 @@ sut:
      - "REDIS_EVENTS_PORT_6379_TCP_ADDR=redis"
 
 redis:
-    image: tutum/redis:latest
-    environment:
-     - "REDIS_PASS=**None**"
+    image: redis:alpine

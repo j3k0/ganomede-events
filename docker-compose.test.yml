@@ -6,9 +6,10 @@ users:
      - ./src:/home/app/code/src
      - ./tests:/home/app/code/tests
     links:
-     - redis:redis_events
+     - redis
     environment:
      - "API_SECRET=1234"
+     - "REDIS_EVENTS_PORT_6379_TCP_ADDR=redis"
     ports:
      - "8011:8000"
 
@@ -20,9 +21,9 @@ sut:
      - ./src:/home/app/code/src
      - ./tests:/home/app/code/tests
     links:
-     - redis:redis_events
+     - redis
     environment:
-     - "API_SECRET=1234"
+     - "REDIS_EVENTS_PORT_6379_TCP_ADDR=redis"
 
 redis:
     image: tutum/redis:latest

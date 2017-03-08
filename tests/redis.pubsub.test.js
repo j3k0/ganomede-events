@@ -5,9 +5,9 @@ const async = require('async');
 const td = require('testdouble');
 const {verify, when} = td;
 const {anything, isA} = td.matchers;
-const redis = require('redis');
+const {prepareRedisClient} = require('./helper');
 
-describe('redis.pubsub', () => {
+describe('redis.pubsub', function() {
 
   let pubsub;
   let redisPubClient;
@@ -95,35 +95,32 @@ describe('redis.pubsub', () => {
     });
   });
 
-  describe('integration tests', () => {
+  describe('integration tests', function() {
 
     let pubsub;
     let redisPubClient;
     let redisSubClient;
 
-    before(function (done) {
-      const retry_strategy = (options) =>
-        new Error('skip-test');
-      redisPubClient = redis.createClient({retry_strategy});
-      redisSubClient = redis.createClient({retry_strategy});
-      pubsub = require('../src/redis.pubsub').createPubSub({
-        redisPubClient, redisSubClient
-      });
-      redisPubClient.info((err) => {
-        // Connection to redis failed, skipping integration tests.
-        if (err && err.origin && err.origin.message === 'skip-test')
-          this.skip();
-        else
-          done();
-      });
+    beforeEach(prepareRedisClient((client) => redisPubClient = client));
+    beforeEach(prepareRedisClient((client) => redisSubClient = client));
+    beforeEach(() => {
+      if (redisSubClient && redisPubClient)
+        pubsub = require('../src/redis.pubsub').createPubSub({
+          redisPubClient, redisSubClient
+        });
     });
 
-    after(() => {
-      redisPubClient.quit();
-      redisSubClient.quit();
+    afterEach(() => {
+      if (redisPubClient)
+        redisPubClient.quit();
+      if (redisSubClient)
+        redisSubClient.quit();
+      pubsub = redisSubClient = redisPubClient = null;
     });
 
-    it('notify subscribers on publish', (done) => {
+    const hasPubSub = () => !!pubsub;
+
+    it('notify subscribers on publish', testableWhen(hasPubSub, (done) => {
 
       // Create 4 subscribers
       const subscribers = [0, 1, 2, 3].map((index) =>
@@ -174,7 +171,7 @@ describe('redis.pubsub', () => {
 
         done();
       });
-    });
+    }));
   });
 
 });

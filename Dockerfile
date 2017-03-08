@@ -11,7 +11,7 @@ COPY package.json /home/app/code/package.json
 RUN cd /home/app/code && npm install
 
 # Copy app source files
-COPY index.js config.js .eslintignore .eslintrc /home/app/code/
+COPY index.js config.js .eslintrc /home/app/code/
 COPY tests /home/app/code/tests
 COPY src /home/app/code/src
 RUN chown -R app /home/app

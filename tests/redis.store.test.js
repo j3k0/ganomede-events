@@ -2,9 +2,9 @@
 
 const async = require('async');
 const {createStore} = require('../src/redis.store');
-const {prepareRedisClient} = require('./helper');
+const {prepareRedisClient, testableWhen} = require('./helper');
 
-describe('redis.store', function() {
+describe('redis.store', function () {
 
   let redisClient;
   let store;
@@ -21,7 +21,7 @@ describe('redis.store', function() {
 
   const hasStore = () => !!store;
 
-  describe('#setIndex()', function() {
+  describe('#setIndex()', function () {
     it('sets key to hold passed index', testableWhen(hasStore, (done) => {
       store.setIndex('something', 42, done);
     }));

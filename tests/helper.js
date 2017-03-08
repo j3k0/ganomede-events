@@ -13,6 +13,9 @@ td.print = (what) => {
 global.td = td;
 global.expect = expect;
 
+// creates and check a redisClient according to config parameters.
+//  - then callback(redisClient)
+//  - redisClient will be null if it can't be joined
 const prepareRedisClient = (cb) =>
   (done) => {
     const client = redis.createClient({
@@ -21,7 +24,7 @@ const prepareRedisClient = (cb) =>
       retry_strategy: (options) =>
         new Error('skip-test')
     });
-    client.flushdb(function(err) {
+    client.flushdb(function (err) {
       // Connection to redis failed, skipping integration tests.
       if (err && err.origin && err.origin.message === 'skip-test')
         cb(null);
@@ -31,10 +34,11 @@ const prepareRedisClient = (cb) =>
     });
   };
 
-global.testableWhen = (isTestRunnable, test) => {
+// skip a test if isTestRunnable function returns falsy
+const testableWhen = (isTestRunnable, test) => {
   // no arrow function here:
   // https://github.com/mochajs/mochajs.github.io/pull/14/files
-  return function(done) {
+  return function (done) {
     if (isTestRunnable())
       test(done);
     else
@@ -44,4 +48,4 @@ global.testableWhen = (isTestRunnable, test) => {
 
 afterEach(() => td.reset());
 
-module.exports = {prepareRedisClient};
+module.exports = {testableWhen, prepareRedisClient};

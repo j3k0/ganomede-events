@@ -5,9 +5,9 @@ const async = require('async');
 const td = require('testdouble');
 const {verify, when} = td;
 const {anything, isA} = td.matchers;
-const {prepareRedisClient} = require('./helper');
+const {prepareRedisClient, testableWhen} = require('./helper');
 
-describe('redis.pubsub', function() {
+describe('redis.pubsub', function () {
 
   let pubsub;
   let redisPubClient;
@@ -95,7 +95,7 @@ describe('redis.pubsub', function() {
     });
   });
 
-  describe('integration tests', function() {
+  describe('integration tests', function () {
 
     let pubsub;
     let redisPubClient;

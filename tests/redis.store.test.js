@@ -1,42 +1,54 @@
 'use strict';
 
 const async = require('async');
-const redis = require('redis');
 const {createStore} = require('../src/redis.store');
+const {prepareRedisClient, testableWhen} = require('./helper');
 
-describe('redis.store', () => {
-  const redisClient = redis.createClient();
-  const store = createStore({redisClient});
+describe('redis.store', function () {
 
-  after(done => redisClient.flushdb(done));
-  after(done => redisClient.quit(done));
+  let redisClient;
+  let store;
 
-  describe('#setIndex()', () => {
-    it('sets key to hold passed index', (done) => {
+  beforeEach(prepareRedisClient((client) => redisClient = client));
+  beforeEach(() => store = (redisClient && createStore({redisClient})));
+
+  afterEach(() => {
+    if (redisClient) {
+      redisClient.quit();
+    }
+    store = redisClient = null;
+  });
+
+  const hasStore = () => !!store;
+
+  describe('#setIndex()', function () {
+    it('sets key to hold passed index', testableWhen(hasStore, (done) => {
       store.setIndex('something', 42, done);
-    });
+    }));
   });
 
   describe('#getIndex()', () => {
-    it('returns number saved under key', (done) => {
-      store.getIndex('something', (err, index) => {
-        expect(err).to.be.null;
-        expect(index).to.equal(42);
-        done();
+    it('returns number saved under key', testableWhen(hasStore, (done) => {
+      store.setIndex('something', 42, () => {
+        store.getIndex('something', (err, index) => {
+          expect(err).to.be.null;
+          expect(index).to.equal(42);
+          done();
+        });
       });
-    });
+    }));
 
-    it('returns 0 for missing keys', (done) => {
+    it('returns 0 for missing keys', testableWhen(hasStore, (done) => {
       store.getIndex('missing', (err, index) => {
         expect(err).to.be.null;
         expect(index).to.equal(0);
         done();
       });
-    });
+    }));
   });
 
   describe('#nextIndex()', () => {
-    it('returns index for a channel', (done) => {
+    it('returns index for a channel', testableWhen(hasStore, (done) => {
       const redisClient = td.object(['incr']);
       const store = createStore({redisClient});
 
@@ -44,14 +56,13 @@ describe('redis.store', () => {
         .thenCallback(null, 1);
 
       store.nextIndex('channel', done);
-    });
+    }));
   });
 
   describe('#addItem()', () => {
-    before(done => redisClient.flushdb(done));
     const id = 1;
 
-    it('saves json string to channel:json.id', (done) => {
+    it('saves json string to channel:json.id', testableWhen(hasStore, (done) => {
       store.addItem('channel', {id}, (err, results) => {
         expect(err).to.be.null;
         expect(results).to.eql([
@@ -60,33 +71,34 @@ describe('redis.store', () => {
         ]);
         done();
       });
-    });
+    }));
 
-    it('does not overwrite existing ids', (done) => {
-      store.addItem('channel', {id}, (err, results) => {
-        expect(err).to.be.instanceof(Error);
-        expect(err.message).to.equal('Item already exists');
-        expect(results).to.eql([
-          null,  // no overwrite
-          0      // pushed no items
-        ]);
-        done();
+    it('does not overwrite existing ids', testableWhen(hasStore, (done) => {
+      store.addItem('channel', {id}, () => {
+        store.addItem('channel', {id}, (err, results) => {
+          expect(err).to.be.instanceof(Error);
+          expect(err.message).to.equal('Item already exists');
+          expect(results).to.eql([
+            null,  // no overwrite
+            0      // pushed no items
+          ]);
+          done();
+        });
       });
-    });
+    }));
   });
 
   describe('#loadItems()', () => {
-    before(done => redisClient.flushdb(done));
-    before((done) => {
+    beforeEach(testableWhen(hasStore, (done) => {
       let currentId = 1;
       async.times(
         7,
         (id, cb) => store.addItem('channel', {id: currentId++}, cb),
         done
       );
-    });
+    }));
 
-    it('works', (done) => {
+    it('works', testableWhen(hasStore, (done) => {
       async.series([
         (cb) => store.loadItems('channel', 0, 1, cb),
         (cb) => store.loadItems('channel', 1, 1, cb),
@@ -113,6 +125,6 @@ describe('redis.store', () => {
 
         done();
       });
-    });
+    }));
   });
 });

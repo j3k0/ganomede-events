@@ -4,6 +4,7 @@
 
 const td = require('testdouble');
 const restify = require('restify');
+const {parsePostParams} = require('../src/parse-http-params');
 
 const {anything, isA} = td.matchers;
 const {verify, when} = td;
@@ -81,7 +82,9 @@ describe('events.middleware.post', () => {
   });
 
   const validRequest = () => ({
-    body: Object.assign({}, SUCCESS_EVENT)
+    body: Object.assign({
+      clientId: 'test-client'
+    }, SUCCESS_EVENT)
   });
 
   const validInput = () => ({
@@ -121,6 +124,97 @@ describe('events.middleware.post', () => {
     verify(next());
     verify(res.json(SUCCESS_EVENT_WITH_ID));
     verify(log.error(), {times: 0, ignoreExtraArgs: true});
+  });
+
+  describe('parsePostParams()', () => {
+    const from = 'service/v1';
+    const type = 'new-something';
+    const data = {thing: true};
+    const clientId = 'test-client';
+    const channel = 'channel';
+
+    it('parses valid stuff', () => {
+      expect(parsePostParams({from, type, data, clientId, channel})).to.eql({
+        clientId,
+        channel,
+        event: {from, type, data},
+      });
+
+      expect(parsePostParams({from, type, clientId, channel})).to.eql({
+        clientId,
+        channel,
+        event: {from, type}
+      });
+    });
+
+    it('from must be non-empty string', () => {
+      const t = (input) => {
+        const actual = parsePostParams(input);
+        expect(actual).to.be.instanceof(Error);
+        expect(actual.message).to.equal('Invalid from');
+      };
+
+      t({channel, clientId});
+      t({from: '', channel, clientId});
+      t({from: undefined, channel, clientId});
+      t({from: [], channel, clientId});
+      t({from: 42, channel, clientId});
+    });
+
+    it('type must be non-empty string', () => {
+      const t = (input) => {
+        const actual = parsePostParams(input);
+        expect(actual).to.be.instanceof(Error);
+        expect(actual.message).to.equal('Invalid type');
+      };
+
+      t({from, channel, clientId});
+      t({type: '', from, channel, clientId});
+      t({type: undefined, from, channel, clientId});
+      t({type: [], from, channel, clientId});
+      t({type: 42, from, channel, clientId});
+    });
+
+    it('data must be non-null object or not present', () => {
+      const t = (input) => {
+        const actual = parsePostParams(input);
+        expect(actual).to.be.instanceof(Error);
+        expect(actual.message).to.equal('Invalid data');
+      };
+
+      t({data: '', type, from, channel, clientId});
+      t({data: undefined, type, from, channel, clientId});
+      t({data: 42, type, from, channel, clientId});
+      t({data: null, type, from, channel, clientId});
+    });
+
+    it('client id must be non-empty string', () => {
+      const t = (input) => {
+        const actual = parsePostParams(input);
+        expect(actual).to.be.instanceof(Error);
+        expect(actual.message).to.equal('Invalid Client ID');
+      };
+
+      t({channel});
+      t({clientId: '', channel});
+      t({clientId: 42, channel});
+      t({clientId: false, channel});
+      t({clientId: undefined, channel});
+    });
+
+    it('channel must be non-empty string', () => {
+      const t = (input) => {
+        const actual = parsePostParams(input);
+        expect(actual).to.be.instanceof(Error);
+        expect(actual.message).to.equal('Invalid Channel');
+      };
+
+      t({clientId});
+      t({channel: '', clientId});
+      t({channel: 42, clientId});
+      t({channel: false, clientId});
+      t({channel: undefined, clientId});
+    });
   });
 
 });

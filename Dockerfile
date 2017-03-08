@@ -1,4 +1,4 @@
-FROM node:6
+FROM node:6-slim
 
 EXPOSE 8000
 MAINTAINER Jean-Christophe Hoelt <hoelt@fovea.cc>
@@ -8,10 +8,10 @@ RUN useradd app -d /home/app
 
 # Install NPM packages
 COPY package.json /home/app/code/package.json
-RUN cd /home/app/code && npm install --production
+RUN cd /home/app/code && npm install
 
 # Copy app source files
-COPY index.js config.js .eslintignore .eslintrc /home/app/code/
+COPY index.js config.js .eslintrc /home/app/code/
 COPY tests /home/app/code/tests
 COPY src /home/app/code/src
 RUN chown -R app /home/app

@@ -4,7 +4,7 @@
   const {expect} = require('chai');
   const supertest = require('supertest');
   const createServer = require('../src/server');
-  const redis = require('fakeredis');
+  const redis = require('redis');
   const router = require('../src/events.router');
   const config = require('../config');
 
@@ -14,11 +14,19 @@
     let redisClient;
 
     before(done => {
-      redisClient = redis.createClient(0, 'localhost');
+      const retry_strategy = (options) =>
+        new Error('skip-test');
+      redisClient = redis.createClient(config.redis.port, config.redis.host, {retry_strategy});
       redisClient.duplicate = () =>
-      redis.createClient(0, 'localhost');
+        redisClient = redis.createClient(config.redis.port, config.redis.host, {retry_strategy});
       router(config.http.prefix, server, redisClient);
-      server.listen(done);
+      redisClient.info((err) => {
+        // Connection to redis failed, skipping integration tests.
+        if (err && err.origin && err.origin.message === 'skip-test')
+          this.skip();
+        else
+          server.listen(done);
+      });
     });
 
     after(done => {

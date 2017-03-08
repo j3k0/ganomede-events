@@ -1,0 +1,29 @@
+users:
+    build: .
+    dockerfile: Dockerfile
+    command: node index.js
+    volumes:
+     - ./src:/home/app/code/src
+     - ./tests:/home/app/code/tests
+    links:
+     - redis
+    environment:
+     - "API_SECRET=1234"
+     - "REDIS_EVENTS_PORT_6379_TCP_ADDR=redis"
+    ports:
+     - "8011:8000"
+
+sut:
+    build: .
+    dockerfile: Dockerfile
+    command: sh -c "npm run lint && npm test"
+    volumes:
+     - ./src:/home/app/code/src
+     - ./tests:/home/app/code/tests
+    links:
+     - redis
+    environment:
+     - "REDIS_EVENTS_PORT_6379_TCP_ADDR=redis"
+
+redis:
+    image: redis:alpine

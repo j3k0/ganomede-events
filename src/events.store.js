@@ -1,91 +1,64 @@
 'use strict';
 
-const identity = (x) => x;
+const async = require('async');
+const logger = require('./logger');
 
-// Error codes
-const errors = {
-  invalidEvent: 'invalid event',
-  invalidChannel: 'invalid channel',
-  invalidAfterId: 'invalid after ID'
-};
+const lastFetchedKey = (clientId, channel) => `last-fetched:${clientId}:${channel}`;
 
-const isValidEvent = (event) =>
-  typeof event === 'object' && event !== null;
+class EventsStore {
+  constructor (itemsStore) {
+    this.items = itemsStore;
+  }
 
-const isValidChannel = (channel) =>
-  typeof channel === 'string';
+  addEvent (channel, eventArg, callback) {
+    async.waterfall([
+      (cb) => this.items.nextIndex(channel, cb),
+      (id, cb) => {
+        const event = Object.assign({
+          id,
+          timestamp: Date.now(),
+        }, eventArg);
 
-const isValidAfterId = (after) => {
-  return after === undefined ||
-    typeof after === 'number' ||
-    typeof after === 'string' && !isNaN(parseInt(after));
-};
+        this.items.addItem(channel, event, (err) => {
+          return err
+            ? cb(err)
+            : cb(null, event);
+        });
+      }
+    ], callback);
+  }
 
-// Initializes an events store.
-//
-// depends upon an `itemsStore`,  an object with the following methods:
-//
-//    - loadItems(channel, id, callback)
-//    - addItem(channel, event, itemFactory, callback)
-//
-// (see redis.store.js for a redis implementation of an item store)
-//
-const createStore = ({
-  itemsStore
-}) => {
+  _load (channel, after, limit, callback) {
+    // Try updating last fetched index.
 
-  return {
 
-  // Store a new event in a channel
-    addEvent: (channel, event, callback) => {
+    // Start loading stuff.
+    this.items.loadItems(channel, after, limit, callback);
+  }
 
-      if (!isValidEvent(event))
-        return callback(new Error(errors.invalidEvent));
+  _loadWithLastFetched (clientId, channel, limit, callback) {
+    async.waterfall([
+      (cb) => this.items.getIndex(lastFetchedKey(clientId, channel), cb),
+      (after, cb) => this._load(channel, after, limit, cb)
+    ], callback);
+  }
 
-      if (!isValidChannel(channel))
-        return callback(new Error(errors.invalidChannel));
-
-      const itemFactory = (data, index) => ({
-        id: index,
-        timestamp: new Date().getTime(),
-        from: data.from,
-        type: data.type,
-        data: data.data
+  loadEvents (channel, {clientId, after, limit, afterExplicitlySet}, callback) {
+    if (afterExplicitlySet) {
+      // In addition to loading items, treat this request as an ACK
+      // that client processed all the messages with id up to `after`
+      // and update last-fetched to be that.
+      const key = lastFetchedKey(clientId, channel);
+      this.items.setIndex(key, after, (err) => {
+        if (err)
+          logger.error('Failed to update "%s"', key, err);
       });
-
-      itemsStore.addItem(channel, event, itemFactory, callback);
-    },
-
-  // Retrieve all events from a channel, with ids bigger than the given one
-    loadEvents: (channel, id, callback) => {
-
-      callback = callback || identity;
-
-      if (!isValidChannel(channel))
-        return callback(new Error(errors.invalidChannel));
-
-      if (!isValidAfterId(id))
-        return callback(new Error(errors.invalidAfterId));
-
-      const formatEvent = (event) => ({
-        id: parseInt(event.id),
-        timestamp: parseInt(event.timestamp),
-        type: event.type,
-        from: event.from,
-        data: event.data
-      });
-
-      const done = (err, items) => {
-        return err
-          ? callback(err)
-          : callback(null, items.map(formatEvent));
-      };
-
-      itemsStore.loadItems(channel, id, done);
+      return this._load(channel, after, limit, callback);
     }
-  };};
 
-module.exports = {
-  createStore,
-  errors
-};
+    this._loadWithLastFetched(clientId, channel, limit, callback);
+  }
+}
+
+const createStore = ({itemsStore}) => new EventsStore(itemsStore);
+module.exports = {createStore};

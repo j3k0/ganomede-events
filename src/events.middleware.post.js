@@ -1,34 +1,23 @@
 'use strict';
 
-// restify middleware that adds an event to a channel
-//
-// Request body is JSON with fields:
-//  - channel: string
-//             channel to load events from
-//  - from, type, data: event properties (see README.md)
-//
-// Reponds with a JSON event with its allocated id
-//
-const eventsStore = require('./events.store');
 const restify = require('restify');
-const _ = require('lodash');
+const {parsePostParams} = require('./parse-http-params');
 
 const createMiddleware = ({
   poll = require('./poll'),
   log = require('./logger'),
   store
 }) => (req, res, next) => {
+  const params = parsePostParams(req.body);
+  if (params instanceof Error)
+    return next(new restify.InvalidContentError(params.message));
 
-  const channel = req.body.channel;
-  const event = _.pick(req.body, 'from', 'type', 'data');
-
-  if (!channel)
-    return next(new restify.InvalidContentError('channel missing'));
+  const {channel, event} = params;
 
   store.addEvent(channel, event, (err, event) => {
 
     if (err)
-      return next(convertError(err));
+      return next(err);
 
     res.json(event);
     next();
@@ -41,16 +30,6 @@ const createMiddleware = ({
         log.error(err, 'poll.trigger failed');
     });
   });
-};
-
-const isInvalidContent = (err) =>
-  err === eventsStore.errors.invalidEvent ||
-  err === eventsStore.errors.invalidChannel;
-
-const convertError = (err) => {
-  return isInvalidContent(err)
-    ? new restify.InvalidContentError(err.message)
-    : err;
 };
 
 module.exports = {createMiddleware};

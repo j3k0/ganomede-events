@@ -7,58 +7,55 @@ const utils = require('./utils');
 const INDICES = 'indices';
 const KEYS = 'keys';
 
-const errors = {
-  invalidClient: 'invalid redisClient'
-};
-
 const key = (group, tag) => `${group}:${tag}`;
-const isRedisClient = (redisClient) =>
-  typeof redisClient === 'object' && redisClient !== null;
 
-const createStore = ({
-  redisClient
-}) => ({
+class RedisStore {
+  constructor (redisClient) {
+    this.redis = redisClient;
+  }
 
-/*
- * - itemFactory: Function(data, index)
- *    Function that initializes the data to be added to database.
- *    It is provided with the data itself and index of the item.
- */
-  addItem: (group, data, itemFactory, callback) => {
+  getIndex (key, callback) {
+    this.redis.get(key, (err, int) => {
+      return err
+        ? callback(err)
+        : callback(null, int ? parseInt(int, 10) : 0);
+    });
+  }
 
-    if (!isRedisClient(redisClient))
-      return callback(new Error(errors.invalidClient));
+  setIndex (key, idx, callback) {
+    this.redis.set(key, String(idx), (err) => callback(err));
+  }
 
-    const incrIndex = (callback) =>
-    redisClient.incr(key(group, INDICES), callback);
+  nextIndex (channel, callback) {
+    this.redis.incr(`${INDICES}:${channel}`, callback);
+  }
 
-    const pushItem = (index, callback) => {
-      const hashKey = key(group, index);
-      const sortKey = key(group, KEYS);
-      const item = itemFactory(data, index);
-      const done = (err) => callback(err, item);
+  addItem (channel, json, callback) {
+    const hashKey = key(channel, json.id);
+    const sortKey = key(channel, KEYS);
 
-      redisClient.multi()
-      .set(hashKey, JSON.stringify(item))
-      .zadd(sortKey, index, hashKey)
-      .exec(done);
-    };
+    this.redis.multi()
+      .set(hashKey, JSON.stringify(json), 'NX')
+      .zadd(sortKey, 'NX', json.id, hashKey)
+      .exec((err, results) => {
+        if (err)
+          return callback(err);
 
-    async.waterfall([incrIndex, pushItem], callback);
-  },
+        if (results[0] === null)
+          return callback(new Error('Item already exists'), results);
 
-  loadItems: (group, start, callback) => {
+        callback(null, results);
+      });
+  }
 
-    if (!isRedisClient(redisClient))
-      return callback(new Error(errors.invalidClient));
-
+  loadItems (channel, start, limit, callback) {
     const retrieveKeys = (callback) =>
-    redisClient.zrangebyscore(key(group, KEYS),
-      utils.addOne(start), '+inf', callback);
+    this.redis.zrangebyscore(key(channel, KEYS),
+      utils.addOne(start), '+inf', 'LIMIT', 0, limit, callback);
 
     const pullAllItems = (keys, callback) => {
       return keys.length > 0
-        ? redisClient.mget(keys, callback)
+        ? this.redis.mget(keys, callback)
         : callback(null, []);
     };
 
@@ -72,9 +69,7 @@ const createStore = ({
       callback(err, items);
     });
   }
-});
+}
 
-module.exports = {
-  errors,
-  createStore
-};
+const createStore = ({redisClient}) => new RedisStore(redisClient);
+module.exports = {createStore};

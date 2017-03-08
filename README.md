@@ -46,7 +46,7 @@ You can also start a server from the public docker image:
 docker run -p 8000:8000 --link redis_events:redis_events ganomede/events
 ```
 
-You can also play around with provided `docker-compose.yml` and `Dockerfile`.
+You can also play around with provided `docker-compose.test.yml` and `Dockerfile`.
 
 ### Client Library
 

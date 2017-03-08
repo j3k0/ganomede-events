@@ -12,6 +12,18 @@ users:
     ports:
      - "8011:8000"
 
+sut:
+    build: .
+    dockerfile: Dockerfile
+    command: sh -c "npm run lint && npm test"
+    volumes:
+     - ./src:/home/app/code/src
+     - ./tests:/home/app/code/tests
+    links:
+     - redis:redis_events
+    environment:
+     - "API_SECRET=1234"
+
 redis:
     image: tutum/redis:latest
     environment:

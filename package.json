@@ -8,8 +8,9 @@
     "prepublish": "npm run lint && npm run test",
     "start": "node index.js",
     "startw": "nodemon --watch src/ --watch index.js --watch config.js --exec \"npm start\"",
-    "test": "API_SECRET=1 BUNYAN_LEVEL=ERROR mocha --bail --throw-deprecation tests/helper.js 'tests/**/*.test.js'",
+    "test": "API_SECRET=1 LOG_LEVEL=ERROR mocha --bail --throw-deprecation tests/helper.js 'tests/**/*.test.js'",
     "testw": "nodemon --watch src/ --watch tests/ --watch config.js --exec \"npm test\"",
+    "coverage": "LOG_LEVEL=FATAL API_SECRET=12345678 istanbul cover _mocha -- -b tests/helper.js tests/**/*.test.js && istanbul report",
     "lint": "eslint src/ tests/ index.js config.js"
   },
   "repository": {
@@ -30,6 +31,7 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "eslint": "^3.8.0",
+    "istanbul": "^0.4.5",
     "mocha": "^3.2.0",
     "supertest": "^3.0.0",
     "testdouble": "^1.9.0"

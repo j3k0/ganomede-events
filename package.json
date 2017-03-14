@@ -1,6 +1,6 @@
 {
   "name": "ganomede-events",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "api": "events/v1",
   "description": "NodeJS pub/sub library using ganomede-notifications",
   "main": "index.js",

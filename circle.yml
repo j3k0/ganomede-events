@@ -18,5 +18,9 @@ dependencies:
     - cd ~/redis-3.2.8 && sudo make install
     - sudo sed -i 's/bin/local\/bin/g' /etc/init/redis-server.conf
     - sudo service redis-server start
+    - npm install https://github.com/nickmerwin/node-coveralls
   cache_directories:
     - ~/redis-3.2.8
+  post:
+    - npm run coverage
+    - cat ./coverage/lcov.info | ./node_modules/.bin/coveralls

@@ -6,7 +6,7 @@ const pkg = require('./package.json');
 
 const parseLogLevel = (envValue) => {
   const defaultLevel = 'INFO';
-  const desiredLevel = envValue ? String(envValue) : defaultLevel;
+  const desiredLevel = envValue ? String(envValue).toUpperCase() : defaultLevel;
   const levels = [
     'FATAL',
     'ERROR',
@@ -30,7 +30,7 @@ const parseLogLevel = (envValue) => {
 
 module.exports = {
   name: 'events',
-  logLevel: parseLogLevel(process.env.BUNYAN_LEVEL),
+  logLevel: parseLogLevel(process.env.LOG_LEVEL),
 
   http: {
     host: process.env.HOST || '0.0.0.0',

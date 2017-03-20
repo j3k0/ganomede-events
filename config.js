@@ -28,9 +28,21 @@ const parseLogLevel = (envValue) => {
   return bunyan[level];
 };
 
+const parseApiSecret = () => {
+  const valid = process.env.hasOwnProperty('API_SECRET')
+    && (typeof process.env.API_SECRET === 'string')
+    && (process.env.API_SECRET.length > 0);
+
+  if (!valid)
+    throw new Error('API_SECRET must be non-empty string');
+
+  return process.env.API_SECRET;
+};
+
 module.exports = {
   name: 'events',
   logLevel: parseLogLevel(process.env.LOG_LEVEL),
+  secret: parseApiSecret(),
 
   http: {
     host: process.env.HOST || '0.0.0.0',
@@ -45,6 +57,5 @@ module.exports = {
     port: +process.env.REDIS_EVENTS_PORT_6379_TCP_PORT || 6379
   },
 
-  secret: process.env.API_SECRET,
   pollTimeout: +process.env.POLL_TIMEOUT || 5000
 };

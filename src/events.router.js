@@ -1,7 +1,7 @@
 'use strict';
 
 const async = require('async');
-const secret = require('./secret');
+const {requireSecret} = require('./middlewares');
 const eventsStore = require('./events.store');
 const redisStore = require('./redis.store');
 const redisPubSub = require('./redis.pubsub');
@@ -24,9 +24,9 @@ const router = (prefix, server, redisClient) => {
     .createMiddleware({store, poll});
 
   server.post(`${prefix}/events`,
-    secret.checkSecret, postEvent);
+    requireSecret, postEvent);
   server.get(`${prefix}/events`,
-    secret.checkSecret, getEvents);
+    requireSecret, getEvents);
 
   return {
     close: (cb) => {

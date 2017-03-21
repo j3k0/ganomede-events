@@ -153,7 +153,8 @@ Some `channel`s are special, and you can not listen or send messages to those:
 
   - [`newListener`](https://nodejs.org/docs/latest/api/events.html#events_event_newlistener) / [`removeListener`](https://nodejs.org/docs/latest/api/events.html#events_event_removelistener) — `EventEmitter`'s events;
   - `error` — used to handle HTTP(S) errors, handler invoked with `(error, channel)`. Non-200 statuses are errors.
-  - `drain` — when there are no channel-listeners and all HTTP(S) request are finished.
+  - `drain` — when there are no channel-listeners and all HTTP(S) request are finished;
+  - `cycle` — after single HTTP(S) request is finished (or errored), all events it might contain are emitted (or error is emitted), and before starting next request. Use this to detach listeners without losing events. Signature: `({finished, next}, channel)`, `finished` is `Cursor` describing pages of completed request, `next` is `Cursor` describing pages of next request.
 
 ### `Client#removeListener(eventName, handler)`
 

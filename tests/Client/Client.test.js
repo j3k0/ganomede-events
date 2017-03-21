@@ -120,6 +120,32 @@ describe('Client', () => {
         done();
       });
     });
+
+    it('emits `cycle(channel)` after every request', (done) => {
+      const client = createClient();
+      const handler = () => { throw new Error('Should never be here'); };
+      let cycleCount = 0;
+
+      // Assume we have no events with this request, but want to detach listener.
+      td.when(client.request.get(td.matchers.isA(Object), td.matchers.isA(Function)))
+        .thenDo((cursor, cb) => setImmediate(cb, null, []));
+
+      // These will never trigger.
+      client.on('ch', handler);
+      client.on('error', handler);
+
+      // But we still want an ability to do something inbetween requests.
+      client.on('cycle', ({finished, next}, channel) => {
+        expect(channel).to.eql('ch');
+        client.removeListener(channel, handler);
+        ++cycleCount;
+      });
+
+      client.on('drain', () => {
+        expect(cycleCount).to.equal(1);
+        done();
+      });
+    });
   });
 
   describe('#send()', () => {

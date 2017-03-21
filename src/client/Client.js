@@ -14,7 +14,8 @@ const ignoreChannels = [
   'newListener',    // EventEmitter's after listener added
   'removeListener', // EventEmitter's after listener removed
   'error',          // HTTP request errored
-  'drain'           // All the requests are finished and there are no listeners left.
+  'drain',          // All the requests are finished and there are no listeners left.
+  'cycle'           // ({finished, next}, channel) After completing every HTTP request for that channel.
 ];
 
 class Client extends EventEmitter {
@@ -64,6 +65,11 @@ class Client extends EventEmitter {
 
       this.cursors[channel] = cursor.advance(events);
       this.polls[channel] = false;
+
+      this.emit('cycle', {
+        finished: cursor,
+        next: this.cursors[channel]
+      }, channel);
 
       // If there are still listeners for this channel, keep polling.
       // Otherewise we might be in a situation when all the requests

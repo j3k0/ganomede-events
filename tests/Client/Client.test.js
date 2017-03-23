@@ -161,14 +161,14 @@ describe('Client', () => {
 
     it('sends events with data', (done) => {
       const client = createClient();
-      const header = {id: 1, timestamp: Date.now()};
+      const reply = {id: 1, timestamp: Date.now()};
 
       td.when(client.request.post('someplace', {from: 'me', type: 'x'}, td.callback))
-        .thenCallback(null, header);
+        .thenCallback(null, reply);
 
       client.send('someplace', {from: 'me', type: 'x'}, (err, header) => {
         expect(err).to.be.null;
-        expect(header).to.eql(header);
+        expect(header).to.eql(reply);
         done();
       });
     });

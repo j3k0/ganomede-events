@@ -50,7 +50,7 @@ describe('.request()', () => {
     const from = 'service/v1';
     const type = 'event-type';
     const data = {something: true};
-    const header = {id: 1, timestamp: Date.now()};
+    const reply = {id: 1, timestamp: Date.now()};
     const baseOpts = {
       apiRoot: 'http://example.com/events',
       secret: 'qwerty',
@@ -76,12 +76,12 @@ describe('.request()', () => {
     });
 
     td.when(request(expectedOptions, td.matchers.isA(Function)))
-      .thenDo((options, cb) => setImmediate(cb, null, {statusCode: 200}, header));
+      .thenDo((options, cb) => setImmediate(cb, null, {statusCode: 200}, reply));
 
     const obj = requestEvents(baseOpts);
     obj.post(channel, {from, type, data}, (err, header) => {
       expect(err).to.be.null;
-      expect(header).to.eql(header);
+      expect(header).to.eql(reply);
       done();
     });
   });

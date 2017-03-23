@@ -11,7 +11,10 @@ module.exports = ({apiRoot, secret, agent, clientId}) => ({
       agent,
       json: true,
       gzip: true,
-      [(method === 'get') ? 'qs' : 'body']: payload
+      [(method === 'get') ? 'qs' : 'body']: payload,
+      headers: payload && payload.hasOwnProperty('req_id')
+        ? {'x-request-id': payload.req_id}
+        : {}
     };
   },
 

@@ -11,7 +11,7 @@ describe('Client', () => {
         url.parse('http://localhost:3000/events/v1')
       ));
 
-      td.replace(client.request, 'get', td.function());
+      td.replace(client.client, 'getEvents', td.function());
       return client;
     };
 
@@ -20,7 +20,7 @@ describe('Client', () => {
       let nEmits = 0;
       let nCalls = 0;
 
-      td.when(client.request.get(td.matchers.isA(Object), td.matchers.isA(Function)))
+      td.when(client.client.getEvents(td.matchers.isA(Object), td.matchers.isA(Function)))
         .thenDo((cursor, cb) => {
           ++nCalls;
           setImmediate(cb, null, [
@@ -57,7 +57,7 @@ describe('Client', () => {
       let nEmits = 0;
       let nCalls = 0;
 
-      td.when(client.request.get(td.matchers.isA(Object), td.matchers.isA(Function)))
+      td.when(client.client.getEvents(td.matchers.isA(Object), td.matchers.isA(Function)))
         .thenDo((cursor, cb) => {
           ++nCalls;
           setImmediate(cb, null, [
@@ -91,7 +91,7 @@ describe('Client', () => {
       const calls = [];
       let nEmits = 0;
 
-      td.when(client.request.get(td.matchers.isA(Object), td.matchers.isA(Function)))
+      td.when(client.client.getEvents(td.matchers.isA(Object), td.matchers.isA(Function)))
         .thenDo((cursor, cb) => {
           calls.push(cursor.channel);
           setImmediate(cb, null, [
@@ -127,7 +127,7 @@ describe('Client', () => {
       let cycleCount = 0;
 
       // Assume we have no events with this request, but want to detach listener.
-      td.when(client.request.get(td.matchers.isA(Object), td.matchers.isA(Function)))
+      td.when(client.client.getEvents(td.matchers.isA(Object), td.matchers.isA(Function)))
         .thenDo((cursor, cb) => setImmediate(cb, null, []));
 
       // These will never trigger.
@@ -155,7 +155,7 @@ describe('Client', () => {
         url.parse('http://localhost:3000/events/v1')
       ));
 
-      td.replace(client.request, 'post', td.function());
+      td.replace(client.client, 'sendEvent', td.function());
       return client;
     };
 
@@ -163,7 +163,7 @@ describe('Client', () => {
       const client = createClient();
       const reply = {id: 1, timestamp: Date.now()};
 
-      td.when(client.request.post('someplace', {from: 'me', type: 'x'}, td.callback))
+      td.when(client.client.sendEvent('someplace', {from: 'me', type: 'x'}, td.callback))
         .thenCallback(null, reply);
 
       client.send('someplace', {from: 'me', type: 'x'}, (err, header) => {

@@ -3,8 +3,8 @@
 const BaseClient = require('ganomede-base-client');
 
 class EventsClient extends BaseClient {
-  constructor ({protocol, hostname, port, pathnamePrefix, clientId, secret}) {
-    super(`${protocol}://${hostname}:${port}${pathnamePrefix}`);
+  constructor ({protocol, hostname, port, pathnamePrefix, clientId, secret, agent}) {
+    super(`${protocol}://${hostname}:${port}${pathnamePrefix}`, {agent});
     this.clientId = clientId;
     this.secret = secret;
   }

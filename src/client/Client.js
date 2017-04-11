@@ -20,8 +20,8 @@ const ignoreChannels = [
 
 class Client extends EventEmitter {
   constructor (clientId, {
-    secret,
-    agent,
+    secret, // [required]
+    agent,  // [optional] http/https agent to use https://nodejs.org/api/http.html#http_class_http_agent
     protocol = 'http',
     hostname = 'localhost',
     port = 8000,

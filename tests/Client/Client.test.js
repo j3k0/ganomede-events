@@ -4,6 +4,13 @@ const url = require('url');
 const config = require('../../config');
 const Client = require('../../src/client/Client');
 describe('Client', () => {
+  describe('new Client()', () => {
+    it('default prefix is correct', () => {
+      const client = new Client('someId', {secret: '1'});
+      expect(client.client.pathPrefix).to.equal('/events/v1');
+    });
+  });
+
   describe('listening for events', () => {
     const createClient = () => {
       const client = new Client('clientId', Object.assign(

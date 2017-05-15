@@ -3,7 +3,7 @@
 const {EventEmitter} = require('events');
 const lodash = require('lodash');
 const Cursor = require('./Cursor');
-const requestEvents = require('./request');
+const EventsClient = require('./EventsClient');
 const config = require('../../config');
 
 const noop = () => {};
@@ -20,27 +20,31 @@ const ignoreChannels = [
 
 class Client extends EventEmitter {
   constructor (clientId, {
-    secret,
-    agent,
+    secret, // [required]
+    agent,  // [optional] http/https agent to use https://nodejs.org/api/http.html#http_class_http_agent
     protocol = 'http',
     hostname = 'localhost',
     port = 8000,
-    pathname = `${config.http.prefix}/events`
+    pathname = `${config.http.prefix}`
   } = {}) {
     if ((typeof secret !== 'string') || (secret.length === 0))
       throw new Error('options.secret must be non-empty string');
 
+    super();
+
     const normalizedProtocol = protocol.endsWith(':') ? protocol : `${protocol}:`;
     const agentArg = agent || require(normalizedProtocol.slice(0, -1)).globalAgent;
-    const apiRoot = {
-      protocol: normalizedProtocol,
+
+    this.client = new EventsClient({
+      agent: agentArg,
+      protocol,
       hostname,
       port,
-      pathname
-    };
+      pathnamePrefix: pathname,
+      clientId,
+      secret
+    });
 
-    super();
-    this.request = requestEvents({apiRoot, secret, agent: agentArg, clientId});
     this.polls = {};   // which cursor is running (channel -> bool)
     this.cursors = {}; // channel -> cursor
   }
@@ -57,7 +61,7 @@ class Client extends EventEmitter {
     this.polls[channel] = true;
     const cursor = this.cursors[channel] = this.cursors[channel] || new Cursor(channel);
 
-    this.request.get(cursor, (err, events) => {
+    this.client.getEvents(cursor, (err, events) => {
       if (err)
         this.emit('error', err, channel);
       else
@@ -110,7 +114,7 @@ class Client extends EventEmitter {
       ? {from, type, data}
       : {from, type};
 
-    this.request.post(channel, event, callback);
+    this.client.sendEvent(channel, event, callback);
   }
 }
 

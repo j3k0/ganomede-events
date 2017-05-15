@@ -1,6 +1,6 @@
 {
   "name": "ganomede-events",
-  "version": "1.2.1",
+  "version": "1.2.4",
   "api": "events/v1",
   "description": "NodeJS pub/sub library using ganomede-notifications",
   "main": "index.js",
@@ -41,9 +41,9 @@
     "async": "^2.1.2",
     "bunyan": "^1.8.1",
     "curtain-down": "^1.0.0",
+    "ganomede-base-client": "^1.1.0",
     "lodash": "^4.17.2",
     "redis": "^2.6.5",
-    "request": "^2.79.0",
     "restify": "^4.1.1"
   }
 }

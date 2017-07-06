@@ -45,7 +45,7 @@
     "ganomede-base-client": "^1.1.0",
     "lodash": "^4.17.2",
     "redis": "^2.6.5",
-    "restify": "^4.1.1",
+    "restify": "^5.0.0",
     "snyk": "^1.30.1"
   },
   "snyk": true

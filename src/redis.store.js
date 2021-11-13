@@ -69,6 +69,12 @@ class RedisStore {
       callback(err, items);
     });
   }
+
+  loadLatestEvents (channel, limit, callback) {
+    this.redis.lrange(key(channel, KEYS), -limit, -1, (err, results) => {
+      callback(err, results);
+    });
+  }
 }
 
 const createStore = ({redisClient}) => new RedisStore(redisClient);

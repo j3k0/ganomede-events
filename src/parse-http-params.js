@@ -82,7 +82,23 @@ const parsePostParams = (params = {}) => {
   return {clientId, channel, event};
 };
 
+
+const parseLatestGetParams = (params = {}) => {
+
+  const channel = nonEmptyString(params.channel);
+  if (!channel)
+    return new Error('Invalid Channel');
+
+  const limit = parseLimit(params.limit);
+
+  return {
+    channel,
+    limit
+  };
+};
+
 module.exports = {
   parseGetParams,
-  parsePostParams
+  parsePostParams,
+  parseLatestGetParams
 };

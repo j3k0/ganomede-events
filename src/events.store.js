@@ -43,6 +43,10 @@ class EventsStore {
     ], callback);
   }
 
+  loadLatestItems (channel, limit, callback) {
+    this.items.loadLatestEvents(channel, limit, callback);
+  }
+
   loadEvents (channel, {clientId, after, limit, afterExplicitlySet}, callback) {
     if (afterExplicitlySet) {
       // In addition to loading items, treat this request as an ACK

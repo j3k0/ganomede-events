@@ -8,6 +8,7 @@ const curtain = require('curtain-down');
 const config = require('../config');
 const about = require('./about.router');
 const events = require('./events.router');
+const latest = require('./latest.router');
 const ping = require('./ping.router');
 const createServer = require('./server');
 const logger = require('./logger');
@@ -49,6 +50,7 @@ const child = () => {
   const redisClient = redis.createClient(config.redis.port, config.redis.host);
 
   const eventsRouter = events(config.http.prefix, server, redisClient);
+  const latestRouter = latest(config.http.prefix, server, redisClient);
   about(config.http.prefix, server);
   ping(config.http.prefix, server);
 
@@ -58,7 +60,8 @@ const child = () => {
     async.parallel([
       (cb) => redisClient.quit(cb),
       (cb) => server.close(cb),
-      (cb) => eventsRouter.close(cb)
+      (cb) => eventsRouter.close(cb),
+      (cb) => latestRouter.close(cb),
     ], () => cluster.worker.disconnect());
   });
 

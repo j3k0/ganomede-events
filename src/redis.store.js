@@ -71,8 +71,27 @@ class RedisStore {
   }
 
   loadLatestEvents (channel, limit, callback) {
-    this.redis.lrange(key(channel, KEYS), -limit, -1, (err, results) => {
-      callback(err, results);
+    // this.redis.zrange(key(channel, KEYS), -limit, -1, (err, results) => {
+    //   callback(err, results);
+    // });
+
+    const retrieveKeys = (callback) =>
+    this.redis.zrange(key(channel, KEYS), -limit, -1, callback);
+
+    const pullAllItems = (keys, callback) => {
+      return keys.length > 0
+        ? this.redis.mget(keys, callback)
+        : callback(null, []);
+    };
+
+    async.waterfall([
+      retrieveKeys,
+      pullAllItems
+    ], (err, items) => {
+      try {
+        items = items.map(JSON.parse);
+      } catch (e) {}
+      callback(err, items);
     });
   }
 }

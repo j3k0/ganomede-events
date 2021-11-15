@@ -14,9 +14,9 @@ import restify from 'restify';
 const {parseLatestGetParams} = require('./parse-http-params');
 
 const createMiddleware = ({
-  poll = require('./poll'),
-  log = require('./logger'),
-  config = require('../config'),
+  // poll = require('./poll'),
+  // log = require('./logger'),
+  // config = require('../config'),
   store
 }) => (req, res, next) => {
   const params = parseLatestGetParams(req.params);

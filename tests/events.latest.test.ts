@@ -1,8 +1,5 @@
 // unit tests for events.middleware.get
 
-'use strict';
-
-
 import {expect} from 'chai';
 import supertest from 'supertest';
 import {createServer} from '../src/server';
@@ -10,6 +7,7 @@ import {config} from '../config';
 import {latest} from '../src/latest.router';
 import {parseLatestGetParams} from '../src/parse-http-params';
 import redis from 'redis';
+import td from 'testdouble';
 
 const url = `${config.http.prefix}/latest`;
 
@@ -54,50 +52,75 @@ describe('Testing ParseLatestGetParams', () => {
   });
 });
 
-describe.skip('events.latest.get', () => {
+describe('events.latest.get', () => {
 
   const server = createServer();
 
   before(done => {
+    /*
     const retry_strategy = (options) =>
         new Error('skip-test');
     redisClient = redis.createClient(config.redis.port, config.redis.host, {retry_strategy});
     redisClient.duplicate = () =>
         redisClient = redis.createClient(config.redis.port, config.redis.host, {retry_strategy});
 
-    latest(config.http.prefix, server, redisClient);
     redisClient.info((err) => {
-        // Connection to redis failed, skipping integration tests.
+      // Connection to redis failed, skipping integration tests.
+      // console.log("XXX");
       if (err && err.origin && err.origin.message === 'skip-test')
         (this as any).skip();
       else
-          server.listen(done);
+        server.listen(done);
     });
+
+    this.redis.zrange(key(channel, KEYS), -limit, -1, callback);
+    const pullAllItems = (keys, callback) => {
+      return keys.length > 0
+        ? this.redis.mget(keys, callback)
+
+    */
+    redisClient = td.object(['zrange', 'mget']);
+    latest(config.http.prefix, server, redisClient);
+    server.listen(done);
   });
 
   after(done => {
-    redisClient.quit();
+    // redisClient.quit();
     server.close(done);
   });
 
-  const testUrl = (url) => {
-    it(`GET ${url}`, (done) => {
-      supertest(server)
-          .get(url)
-          .expect(200)
-          .query({channel: NON_EMPTY_CHANNEL})
-          .end((err, res) => {
-            expect(res.status).to.equal(200);
-            expect(err).to.be.null;
-            done();
-          });
+  it(`returns the array of events`, (done) => {
+
+    td.when(redisClient.zrange(`${NON_EMPTY_CHANNEL}:keys`, -1, -1, td.callback))
+    .thenCallback(null, ['my-event-id']);
+
+    td.when(redisClient.mget(['my-event-id'], td.callback))
+    .thenCallback(null, ['{"stuff":"things"}']);
+
+    supertest(server)
+        .get(url)
+        .expect(200)
+        .query({channel: NON_EMPTY_CHANNEL, limit:1, secret:process.env.API_SECRET})
+        .end((err, res) => {
+          expect(JSON.stringify(res.body)).to.equal('[{"stuff":"things"}]');
+          expect(err).to.be.null;
+          expect(res.status).to.equal(200);
+          done();
+        });
+  });
+
+  it(`fails with 401 if API_SECRET is incorrect`, (done) => {
+    supertest(server)
+    .get(url)
+    .expect(401)
+    .query({channel: NON_EMPTY_CHANNEL, limit:1})
+    .end((err, res) => {
+      expect(res.status).to.equal(401);
+      done();
     });
-  };
+  });
 
-  testUrl(url);
-
-
-  const testRequestParams = (url) => {
+  /*const testRequestParams = (url) => {
     it(`Test-Params ${url} `, (done) => {
       supertest(server)
             .get(url)
@@ -112,6 +135,6 @@ describe.skip('events.latest.get', () => {
     });
   };
 
-  testRequestParams(url);
+  testRequestParams(url);*/
 
 });

@@ -1,8 +1,6 @@
-'use strict';
-
 import restify from 'restify';
 const logger = require('./logger');
-const config = require('../config');
+import {config} from '../config';
 
 const matchSecret = (obj, prop) => {
   const has = obj && obj[prop] && Object.hasOwnProperty.call(obj[prop], 'secret');

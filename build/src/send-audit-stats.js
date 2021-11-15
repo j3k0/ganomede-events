@@ -1,0 +1,26 @@
+// A restify server.on('after', ...) handler
+//
+// Will send requests statistics to a statsd server
+'use strict';
+const stats = require('./statsd-wrapper').createClient();
+const cleanupStatsKey = (key) => key.replace(/[-.]/g, '_').toLowerCase();
+const sendAuditStats = (req, res, next) => {
+    // send number of calls to this route (with response status code) with 10% sampling
+    const routeName = req.route ? 'route.' + req.route.name : 'invalid_route';
+    stats.increment(routeName + '.status.' + res.statusCode, 1, 0.1);
+    // send error statuses (with response status code) with 10% sampling
+    if (res._body && res._body.restCode) {
+        stats.increment(routeName + '.code.' + cleanupStatsKey(res._body.restCode), 1, 0.1);
+    }
+    // send timings with 1% sampling
+    (req.timers || []).forEach((timer) => {
+        const t = timer.time;
+        const n = cleanupStatsKey(timer.name);
+        stats.timing(routeName + '.timers.' + n, 1000000000 * t[0] + t[1], 0.01);
+    });
+    if (typeof next == 'function') {
+        next();
+    }
+};
+module.exports = sendAuditStats;
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoic2VuZC1hdWRpdC1zdGF0cy5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uLy4uL3NyYy9zZW5kLWF1ZGl0LXN0YXRzLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiJBQUFBLDRDQUE0QztBQUM1QyxFQUFFO0FBQ0YsbURBQW1EO0FBRW5ELFlBQVksQ0FBQztBQUViLE1BQU0sS0FBSyxHQUFHLE9BQU8sQ0FBQyxrQkFBa0IsQ0FBQyxDQUFDLFlBQVksRUFBRSxDQUFDO0FBRXpELE1BQU0sZUFBZSxHQUFHLENBQUMsR0FBRyxFQUFFLEVBQUUsQ0FBQyxHQUFHLENBQUMsT0FBTyxDQUFDLE9BQU8sRUFBRSxHQUFHLENBQUMsQ0FBQyxXQUFXLEVBQUUsQ0FBQztBQUV6RSxNQUFNLGNBQWMsR0FBRyxDQUFDLEdBQUcsRUFBRSxHQUFHLEVBQUUsSUFBSSxFQUFFLEVBQUU7SUFFeEMsbUZBQW1GO0lBQ25GLE1BQU0sU0FBUyxHQUFHLEdBQUcsQ0FBQyxLQUFLLENBQUMsQ0FBQyxDQUFDLFFBQVEsR0FBRyxHQUFHLENBQUMsS0FBSyxDQUFDLElBQUksQ0FBQyxDQUFDLENBQUMsZUFBZSxDQUFDO0lBQzFFLEtBQUssQ0FBQyxTQUFTLENBQUMsU0FBUyxHQUFHLFVBQVUsR0FBRyxHQUFHLENBQUMsVUFBVSxFQUFFLENBQUMsRUFBRSxHQUFHLENBQUMsQ0FBQztJQUVqRSxvRUFBb0U7SUFDcEUsSUFBSSxHQUFHLENBQUMsS0FBSyxJQUFJLEdBQUcsQ0FBQyxLQUFLLENBQUMsUUFBUSxFQUFFO1FBQ25DLEtBQUssQ0FBQyxTQUFTLENBQUMsU0FBUyxHQUFHLFFBQVEsR0FBRyxlQUFlLENBQUMsR0FBRyxDQUFDLEtBQUssQ0FBQyxRQUFRLENBQUMsRUFBRSxDQUFDLEVBQUUsR0FBRyxDQUFDLENBQUM7S0FDckY7SUFFRCxnQ0FBZ0M7SUFDaEMsQ0FBQyxHQUFHLENBQUMsTUFBTSxJQUFJLEVBQUUsQ0FBQyxDQUFDLE9BQU8sQ0FBQyxDQUFDLEtBQUssRUFBRSxFQUFFO1FBQ25DLE1BQU0sQ0FBQyxHQUFHLEtBQUssQ0FBQyxJQUFJLENBQUM7UUFDckIsTUFBTSxDQUFDLEdBQUcsZUFBZSxDQUFDLEtBQUssQ0FBQyxJQUFJLENBQUMsQ0FBQztRQUN0QyxLQUFLLENBQUMsTUFBTSxDQUFDLFNBQVMsR0FBRyxVQUFVLEdBQUcsQ0FBQyxFQUFFLFVBQVUsR0FBRyxDQUFDLENBQUMsQ0FBQyxDQUFDLEdBQUcsQ0FBQyxDQUFDLENBQUMsQ0FBQyxFQUFFLElBQUksQ0FBQyxDQUFDO0lBQzNFLENBQUMsQ0FBQyxDQUFDO0lBRUgsSUFBSSxPQUFPLElBQUksSUFBSSxVQUFVLEVBQUU7UUFDN0IsSUFBSSxFQUFFLENBQUM7S0FDUjtBQUNILENBQUMsQ0FBQztBQUVGLE1BQU0sQ0FBQyxPQUFPLEdBQUcsY0FBYyxDQUFDIn0=

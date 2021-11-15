@@ -1,0 +1,139 @@
+'use strict';
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const { expect } = require('chai');
+const async_1 = __importDefault(require("async"));
+const td = require('testdouble');
+const { verify, when } = td;
+const { anything, isA } = td.matchers;
+const { prepareRedisClient, testableWhen } = require('./helper');
+describe('redis.pubsub', function () {
+    let pubsub;
+    let redisPubClient;
+    let redisSubClient;
+    let callback;
+    let handler;
+    const OK_CHANNEL = 'ok-channel';
+    const FAIL_CHANNEL = 'fail-channel';
+    const OK_MESSAGE = 'my-message';
+    beforeEach(() => {
+        handler = td.function('handler');
+        callback = td.function('callback');
+        redisPubClient = td.object(['publish']);
+        when(redisPubClient.publish(OK_CHANNEL, anything()))
+            .thenCallback(null);
+        when(redisPubClient.publish(FAIL_CHANNEL, anything()))
+            .thenCallback(new Error('publish failed'));
+        redisSubClient = td.object(['subscribe', 'on']);
+        when(redisSubClient.subscribe(OK_CHANNEL))
+            .thenCallback(null);
+        when(redisSubClient.subscribe(FAIL_CHANNEL))
+            .thenCallback(new Error('subscribe failed'));
+        pubsub = require('../src/redis.pubsub').createPubSub({
+            redisSubClient,
+            redisPubClient
+        });
+    });
+    describe('.publish', () => {
+        it('succeeds when message is a string', () => {
+            pubsub.publish(OK_CHANNEL, 'abc', callback);
+            verify(callback(null));
+        });
+        it('succeeds when message is a buffer', () => {
+            pubsub.publish(OK_CHANNEL, Buffer.from([]), callback);
+            verify(callback(null));
+        });
+        it('succeeds when message is a number', () => {
+            pubsub.publish(OK_CHANNEL, 0, callback);
+            verify(callback(null));
+        });
+        it('fails when message is not a valid type', () => {
+            pubsub.publish(OK_CHANNEL, {}, callback);
+            verify(callback(isA(Error)));
+        });
+        it('sends message to channel', () => {
+            pubsub.publish(OK_CHANNEL, OK_MESSAGE, callback);
+            verify(redisPubClient.publish(OK_CHANNEL, OK_MESSAGE, td.callback));
+            verify(callback(null));
+        });
+        it('fails when redisPubClient fails', () => {
+            pubsub.publish(FAIL_CHANNEL, OK_MESSAGE, callback);
+            verify(callback(isA(Error)));
+        });
+    });
+    describe('.subscribe', () => {
+        it('fails when handler is not a function', () => {
+            pubsub.subscribe(OK_CHANNEL, {}, callback);
+            verify(callback(isA(Error)));
+        });
+        it('succeeds when handler is a function', () => {
+            pubsub.subscribe(OK_CHANNEL, handler, callback);
+            verify(callback(null));
+        });
+        it('fails when redisSubClient fails', () => {
+            pubsub.subscribe(FAIL_CHANNEL, handler, callback);
+            verify(callback(isA(Error)));
+        });
+    });
+    describe('integration tests', function () {
+        let pubsub;
+        let redisPubClient;
+        let redisSubClient;
+        beforeEach(prepareRedisClient((client) => redisPubClient = client));
+        beforeEach(prepareRedisClient((client) => redisSubClient = client));
+        beforeEach(() => {
+            if (redisSubClient && redisPubClient)
+                pubsub = require('../src/redis.pubsub').createPubSub({
+                    redisPubClient, redisSubClient
+                });
+        });
+        afterEach(() => {
+            if (redisPubClient)
+                redisPubClient.quit();
+            if (redisSubClient)
+                redisSubClient.quit();
+            pubsub = redisSubClient = redisPubClient = null;
+        });
+        const hasPubSub = () => !!pubsub;
+        it('notify subscribers on publish', testableWhen(hasPubSub, (done) => {
+            // Create 4 subscribers
+            const subscribers = [0, 1, 2, 3].map((index) => td.function(`handler${index}`));
+            // Indices of subscribers that we will unsubscribe
+            const toUnsubscribe = [0, 1];
+            // Indices of subscribers that will stay subscribed
+            const keepSubscribed = [2, 3];
+            // Subscribe all to OK_CHANNEL
+            const ops = subscribers.map((subscriber) => pubsub.subscribe.bind(null, OK_CHANNEL, subscriber))
+                // Publish to OK_CHANNEL and FAIL_CHANNEL
+                .concat([
+                pubsub.publish.bind(null, OK_CHANNEL, OK_MESSAGE),
+                pubsub.publish.bind(null, FAIL_CHANNEL, OK_MESSAGE),
+                // make sure subscribers were called...
+                setTimeout.bind(null, (cb) => { cb(); }, 10)
+            ])
+                // Unsubscribe some from OK_CHANNEL
+                .concat(toUnsubscribe.map((i) => pubsub.unsubscribe.bind(null, OK_CHANNEL, subscribers[i])))
+                // Publish to OK_CHANNEL again
+                .concat([
+                pubsub.publish.bind(null, OK_CHANNEL, OK_MESSAGE),
+                // make sure subscribers were called...
+                setTimeout.bind(null, (cb) => { cb(); }, 10)
+            ]);
+            async_1.default.series(ops, (err, results) => {
+                expect(err).to.be.null;
+                // Those that have been unsubscribed have been called once
+                toUnsubscribe.forEach((index) => {
+                    verify(subscribers[index](OK_MESSAGE), { times: 1 });
+                });
+                // Those that stayed subscribed have been called twice
+                keepSubscribed.forEach((index) => {
+                    verify(subscribers[index](OK_MESSAGE), { times: 2 });
+                });
+                done();
+            });
+        }));
+    });
+});
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoicmVkaXMucHVic3ViLnRlc3QuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi90ZXN0cy9yZWRpcy5wdWJzdWIudGVzdC50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUFBQSxZQUFZLENBQUM7Ozs7O0FBRWIsTUFBTSxFQUFDLE1BQU0sRUFBQyxHQUFHLE9BQU8sQ0FBQyxNQUFNLENBQUMsQ0FBQztBQUNqQyxrREFBMEI7QUFDMUIsTUFBTSxFQUFFLEdBQUcsT0FBTyxDQUFDLFlBQVksQ0FBQyxDQUFDO0FBQ2pDLE1BQU0sRUFBQyxNQUFNLEVBQUUsSUFBSSxFQUFDLEdBQUcsRUFBRSxDQUFDO0FBQzFCLE1BQU0sRUFBQyxRQUFRLEVBQUUsR0FBRyxFQUFDLEdBQUcsRUFBRSxDQUFDLFFBQVEsQ0FBQztBQUNwQyxNQUFNLEVBQUMsa0JBQWtCLEVBQUUsWUFBWSxFQUFDLEdBQUcsT0FBTyxDQUFDLFVBQVUsQ0FBQyxDQUFDO0FBRS9ELFFBQVEsQ0FBQyxjQUFjLEVBQUU7SUFFdkIsSUFBSSxNQUFNLENBQUM7SUFDWCxJQUFJLGNBQWMsQ0FBQztJQUNuQixJQUFJLGNBQWMsQ0FBQztJQUNuQixJQUFJLFFBQVEsQ0FBQztJQUNiLElBQUksT0FBTyxDQUFDO0lBRVosTUFBTSxVQUFVLEdBQUcsWUFBWSxDQUFDO0lBQ2hDLE1BQU0sWUFBWSxHQUFHLGNBQWMsQ0FBQztJQUNwQyxNQUFNLFVBQVUsR0FBRyxZQUFZLENBQUM7SUFFaEMsVUFBVSxDQUFDLEdBQUcsRUFBRTtRQUVkLE9BQU8sR0FBRyxFQUFFLENBQUMsUUFBUSxDQUFDLFNBQVMsQ0FBQyxDQUFDO1FBQ2pDLFFBQVEsR0FBRyxFQUFFLENBQUMsUUFBUSxDQUFDLFVBQVUsQ0FBQyxDQUFDO1FBRW5DLGNBQWMsR0FBRyxFQUFFLENBQUMsTUFBTSxDQUFDLENBQUMsU0FBUyxDQUFDLENBQUMsQ0FBQztRQUN4QyxJQUFJLENBQUMsY0FBYyxDQUFDLE9BQU8sQ0FBQyxVQUFVLEVBQUUsUUFB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

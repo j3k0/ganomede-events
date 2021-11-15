@@ -1,0 +1,86 @@
+'use strict';
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createStore = void 0;
+const async_1 = __importDefault(require("async"));
+const utils = require('./utils');
+// Constants
+const INDICES = 'indices';
+const KEYS = 'keys';
+const key = (group, tag) => `${group}:${tag}`;
+class RedisStore {
+    constructor(redisClient) {
+        this.redis = redisClient;
+    }
+    getIndex(key, callback) {
+        this.redis.get(key, (err, int) => {
+            return err
+                ? callback(err)
+                : callback(null, int ? parseInt(int, 10) : 0);
+        });
+    }
+    setIndex(key, idx, callback) {
+        this.redis.set(key, String(idx), (err) => callback(err));
+    }
+    nextIndex(channel, callback) {
+        this.redis.incr(`${INDICES}:${channel}`, callback);
+    }
+    addItem(channel, json, callback) {
+        const hashKey = key(channel, json.id);
+        const sortKey = key(channel, KEYS);
+        this.redis.multi()
+            .set(hashKey, JSON.stringify(json), 'NX')
+            .zadd(sortKey, 'NX', json.id, hashKey)
+            .exec((err, results) => {
+            if (err)
+                return callback(err);
+            if (results[0] === null)
+                return callback(new Error('Item already exists'), results);
+            callback(null, results);
+        });
+    }
+    loadItems(channel, start, limit, callback) {
+        const retrieveKeys = (callback) => this.redis.zrangebyscore(key(channel, KEYS), utils.addOne(start), '+inf', 'LIMIT', 0, limit, callback);
+        const pullAllItems = (keys, callback) => {
+            return keys.length > 0
+                ? this.redis.mget(keys, callback)
+                : callback(null, []);
+        };
+        async_1.default.waterfall([
+            retrieveKeys,
+            pullAllItems
+        ], (err, items) => {
+            try {
+                items = items.map(JSON.parse);
+            }
+            catch (e) { }
+            callback(err, items);
+        });
+    }
+    loadLatestEvents(channel, limit, callback) {
+        // this.redis.zrange(key(channel, KEYS), -limit, -1, (err, results) => {
+        //   callback(err, results);
+        // });
+        const retrieveKeys = (callback) => this.redis.zrange(key(channel, KEYS), -limit, -1, callback);
+        const pullAllItems = (keys, callback) => {
+            return keys.length > 0
+                ? this.redis.mget(keys, callback)
+                : callback(null, []);
+        };
+        async_1.default.waterfall([
+            retrieveKeys,
+            pullAllItems
+        ], (err, items) => {
+            try {
+                items = items.map(JSON.parse);
+            }
+            catch (e) { }
+            callback(err, items);
+        });
+    }
+}
+const createStore = ({ redisClient }) => new RedisStore(redisClient);
+exports.createStore = createStore;
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoicmVkaXMuc3RvcmUuanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyIuLi8uLi9zcmMvcmVkaXMuc3RvcmUudHMiXSwibmFtZXMiOltdLCJtYXBwaW5ncyI6IkFBQUEsWUFBWSxDQUFDOzs7Ozs7QUFFYixrREFBMEI7QUFDMUIsTUFBTSxLQUFLLEdBQUcsT0FBTyxDQUFDLFNBQVMsQ0FBQyxDQUFDO0FBRWpDLFlBQVk7QUFDWixNQUFNLE9BQU8sR0FBRyxTQUFTLENBQUM7QUFDMUIsTUFBTSxJQUFJLEdBQUcsTUFBTSxDQUFDO0FBRXBCLE1BQU0sR0FBRyxHQUFHLENBQUMsS0FBSyxFQUFFLEdBQUcsRUFBRSxFQUFFLENBQUMsR0FBRyxLQUFLLElBQUksR0FBRyxFQUFFLENBQUM7QUFXOUMsTUFBTSxVQUFVO0lBRWQsWUFBYSxXQUFXO1FBQ3RCLElBQUksQ0FBQyxLQUFLLEdBQUcsV0FBVyxDQUFDO0lBQzNCLENBQUM7SUFFRCxRQUFRLENBQUUsR0FBVyxFQUFFLFFBQStDO1FBQ3BFLElBQUksQ0FBQyxLQUFLLENBQUMsR0FBRyxDQUFDLEdBQUcsRUFBRSxDQUFDLEdBQUcsRUFBRSxHQUFHLEVBQUUsRUFBRTtZQUMvQixPQUFPLEdBQUc7Z0JBQ1IsQ0FBQyxDQUFDLFFBQVEsQ0FBQyxHQUFHLENBQUM7Z0JBQ2YsQ0FBQyxDQUFDLFFBQVEsQ0FBQyxJQUFJLEVBQUUsR0FBRyxDQUFDLENBQUMsQ0FBQyxRQUFRLENBQUMsR0FBRyxFQUFFLEVBQUUsQ0FBQyxDQUFDLENBQUMsQ0FBQyxDQUFDLENBQUMsQ0FBQztRQUNsRCxDQUFDLENBQUMsQ0FBQztJQUNMLENBQUM7SUFFRCxRQUFRLENBQUUsR0FBVyxFQUFFLEdBQVcsRUFBRSxRQUE0QztRQUM5RSxJQUFJLENBQUMsS0FBSyxDQUFDLEdBQUcsQ0FBQyxHQUFHLEVBQUUsTUFBTSxDQUFDLEdBQUcsQ0FBQyxFQUFFLENBQUMsR0FBRyxFQUFFLEVBQUUsQ0FBQyxRQUFRLENBQUMsR0FBRyxDQUFDLENBQUMsQ0FB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

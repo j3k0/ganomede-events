@@ -8,12 +8,27 @@ import { latest } from '../src/latest.router';
 import { parseLatestGetParams } from '../src/parse-http-params';
 import { RedisClient } from 'redis';
 import td from 'testdouble';
+import { EventsStore } from '../src/events.store';
+import { AsyncResultCallback } from 'async';
 
+const { anything } = td.matchers;
+const { when } = td;
 const url = `${config.http.prefix}/latest`;
-
 const NON_EMPTY_CHANNEL = 'non-empty-channel';
 
-let redisClient: RedisClient;
+const SUCCESS_CHANNEL = 'success-channel';
+const SUCCESS_EVENT1 = {
+  from: 'from1',
+  type: 'type2',
+  data: { m: 4, x: 4 }
+};
+const SUCCESS_EVENT2 = {
+  from: 'from2',
+  type: 'type3',
+  data: { m: 1, x: 9 }
+};
+
+let redisClient: RedisClient | null;
 
 describe('parse-http-params', () => {
   it('Expects a configuration object to be passed', () => {
@@ -55,45 +70,79 @@ describe('parse-http-params', () => {
 describe('events.latest.get', () => {
 
   const server = createServer();
+  let store: EventsStore | null;
 
-  before(done => {
-    /*
-    const retry_strategy = (options) =>
-        new Error('skip-test');
-    redisClient = redis.createClient(config.redis.port, config.redis.host, {retry_strategy});
-    redisClient.duplicate = () =>
-        redisClient = redis.createClient(config.redis.port, config.redis.host, {retry_strategy});
+  beforeEach(done => {
 
-    redisClient.info((err) => {
-      // Connection to redis failed, skipping integration tests.
-      if (err && err.origin && err.origin.message === 'skip-test')
-        (this as any).skip();
-      else
-        server.listen(done);
-    });
-
-    this.redis.zrange(key(channel, KEYS), -limit, -1, callback);
-    const pullAllItems = (keys, callback) => {
-      return keys.length > 0
-        ? this.redis.mget(keys, callback)
-
-    */
     redisClient = td.object(['zrange', 'mget']) as RedisClient;
-    latest(config.http.prefix, server, redisClient);
+    store = td.object(['addEvent', 'loadLatestItems']) as EventsStore;
+
+    when(store.addEvent(anything(), anything(), td.callback))
+      .thenCallback(new Error('unexpected store.addEvent'));
+    // when(store.loadLatestItems(anything(), anything(), td.callback))
+    //   .thenCallback(new Error('unexpected store.loadLatestItems'));
+
+    latest(config.http.prefix, server, redisClient, store);
     server.listen(done);
   });
 
-  after(done => {
+  afterEach(done => {
     // redisClient.quit();
     server.close(done);
+    store = redisClient = null;
   });
+
+
+
+  it(`expects to return the latest 1 event out of 2 events `, (done) => {
+
+    let eventsArray: { [type: string]: any[] } = {};
+    let i = 1;
+
+    // add some logic to storeEvents.addEvent so we can add events later
+    when(store?.addEvent(SUCCESS_CHANNEL, anything(), td.callback))
+      .thenDo((channel: string, event: any, cb: AsyncResultCallback<any, Error>) => {
+        let eventWithId: {} = Object.assign(
+          { id: i }, event);
+        if (!eventsArray[channel]) eventsArray[channel] = [];
+
+        eventsArray[channel].push(eventWithId);
+        i++;
+        cb(null, eventWithId);
+      });
+
+    // add events1 and 2
+    store?.addEvent(SUCCESS_CHANNEL, SUCCESS_EVENT1, () => { });
+    store?.addEvent(SUCCESS_CHANNEL, SUCCESS_EVENT2, () => { });
+
+    //add the logic to load the latest N elements
+    td.when(store?.loadLatestItems(SUCCESS_CHANNEL, 1, anything()))
+      .thenDo((channel: string, limit: number, cb2: (e: Error | null | undefined, res?: any) => void) => {
+        cb2(null, eventsArray[channel].slice(-limit));
+      });
+
+    // go for the test now using the api.
+    supertest(server)
+      .get(url)
+      .query({ channel: SUCCESS_CHANNEL, limit: 1, secret: process.env.API_SECRET })
+      .end((err, res) => {
+        expect(JSON.stringify(res.body)).to.equal('[{"id":2,"from":"from2","type":"type3","data":{"m":1,"x":9}}]');
+        expect(err).to.be.null;
+        expect(res.status).to.equal(200);
+        done();
+      });
+  });
+
 
   it(`returns the list of events for non-empty channel`, (done) => {
 
-    td.when(redisClient.zrange(`${NON_EMPTY_CHANNEL}:keys`, -1, -1, td.callback))
+    td.when(redisClient?.zrange(`${NON_EMPTY_CHANNEL}:keys`, -1, -1, td.callback))
       .thenCallback(null, ['my-event-id']);
 
-    td.when(redisClient.mget(['my-event-id'], td.callback))
+    td.when(store?.loadLatestItems(NON_EMPTY_CHANNEL, 1, td.callback))
+      .thenCallback(null, [{ stuff: "things" }]);
+
+    td.when(redisClient?.mget(['my-event-id'], td.callback))
       .thenCallback(null, ['{"stuff":"things"}']);
 
     supertest(server)
@@ -108,6 +157,7 @@ describe('events.latest.get', () => {
       });
   });
 
+
   it(`fails with 401 if API_SECRET is incorrect`, (done) => {
     supertest(server)
       .get(url)
@@ -119,21 +169,7 @@ describe('events.latest.get', () => {
       });
   });
 
-  /*const testRequestParams = (url) => {
-    it(`Test-Params ${url} `, (done) => {
-      supertest(server)
-            .get(url)
-            .query({channel: NON_EMPTY_CHANNEL})
-            .expect(200)
-            .end((err, res) => {
-              expect(res.status).to.equal(200);
-              expect(err).to.be.null;
-              expect(res.body).to.be.instanceof(Array);
-              done();
-            });
-    });
-  };
 
-  testRequestParams(url);*/
+
 
 });

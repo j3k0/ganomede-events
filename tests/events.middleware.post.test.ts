@@ -80,7 +80,7 @@ describe('events.middleware.post', () => {
 
     const input = validInput();
     req = input.req as Request;
-    res = input.res as Response;
+    res = input.res as any;
     next = input.next;
   });
 

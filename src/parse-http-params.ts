@@ -1,4 +1,3 @@
-
 const hasOwnProperty = (obj: {}, prop: string) => Object.hasOwnProperty.call(obj, prop);
 
 const toInt = (something: any, defaultValue: number = NaN) => {

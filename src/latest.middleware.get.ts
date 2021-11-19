@@ -4,6 +4,8 @@
 // GET parameters:
 //  - channel: string
 //             channel to load events from
+//  - limit: number (optional)
+//             limit the number to show
 //
 // Reponds with a JSON array of events (see README.md)
 //
@@ -22,7 +24,7 @@ export const createMiddleware = (
 
   const { channel, limit } = params;
 
-  store.loadLatestItems(channel, limit, (err: Error | null | undefined, data: any) => {
+  store.loadLatestItems(channel, limit, (err: Error | null | undefined, data: any[]) => {
 
     if (err)
       return next(err);

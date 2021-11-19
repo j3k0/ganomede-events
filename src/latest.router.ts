@@ -6,11 +6,12 @@ import { Server } from 'restify';
 import { RedisClient } from 'redis';
 import { createMiddleware as createMiddlewareLatest } from './latest.middleware.get';
 
-export const latest = (prefix: string, server: Server, redisClient: RedisClient): void => {
+export const latest = (prefix: string, server: Server, redisClient: RedisClient, store?: EventsStore): void => {
 
 
   const itemsStore: RedisStore = createRedisStore(redisClient);
-  const store: EventsStore = createEventsStore(itemsStore);
+  if (!store)
+    store = createEventsStore(itemsStore);
 
   const getLatest = createMiddlewareLatest(store);
 

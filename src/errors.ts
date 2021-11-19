@@ -62,12 +62,12 @@ const severity = {
 };
 const log: { [key: string]: any } = {};
 
-log[severity.fatal] = logger.fatal;
-log[severity.error] = logger.error;
-log[severity.warn] = logger.warn;
-log[severity.info] = logger.info;
-log[severity.debug] = logger.debug;
-log[severity.trace] = logger.trace;
+log[severity.fatal] = logger.fatal.bind(logger);
+log[severity.error] = logger.error.bind(logger);
+log[severity.warn] = logger.warn.bind(logger);
+log[severity.info] = logger.info.bind(logger);
+log[severity.debug] = logger.debug.bind(logger);
+log[severity.trace] = logger.trace.bind(logger);
 
 class GanomedeError extends Error {
 

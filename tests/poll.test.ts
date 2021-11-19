@@ -1,11 +1,11 @@
 
-import {Poll} from '../src/poll';
+import { Poll } from '../src/poll';
 import td from 'testdouble';
 import { PubSub } from '../src/redis.pubsub';
 import Logger from 'bunyan';
-const {verify, when} = td;
-const {isA} = td.matchers;
-const calledOnce = {times: 1, ignoreExtraArgs: true};
+const { verify, when } = td;
+const { isA } = td.matchers;
+const calledOnce = { times: 1, ignoreExtraArgs: true };
 
 describe('poll', () => {
 

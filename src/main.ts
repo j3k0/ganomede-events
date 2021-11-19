@@ -4,13 +4,13 @@ import cluster from 'cluster';
 import redis, { RedisClient } from 'redis';
 import restify, { Server } from 'restify';
 import curtain from 'curtain-down';
-import {config} from '../config';
-import {createAbout} from './about.router';
-import {createEventsRouter} from './events.router';
-import {latest} from './latest.router';
-import {createPingRouter} from './ping.router';
-import {createServer} from './server';
-import {logger} from './logger';
+import { config } from '../config';
+import { createAbout } from './about.router';
+import { createEventsRouter } from './events.router';
+import { latest } from './latest.router';
+import { createPingRouter } from './ping.router';
+import { createServer } from './server';
+import { logger } from './logger';
 
 const master = () => {
   let running = true;
@@ -64,7 +64,7 @@ const child = () => {
   });
 
   server.listen(config.http.port, config.http.host, () => {
-    const {port, family, address} = server.address();
+    const { port, family, address } = server.address();
     logger.info('ready at %s:%d (%s)', address, port, family);
   });
 

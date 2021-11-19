@@ -24,10 +24,10 @@ const nonEmptyString = (paramValue: any, defaultValue = undefined) => {
   return ok ? paramValue : defaultValue;
 };
 
-const parseAfter = toIntWithinRange({min: 0, byDefault: 0});
-const parseLimit = toIntWithinRange({min: 1, max: 100, byDefault: 100});
+const parseAfter = toIntWithinRange({ min: 0, byDefault: 0 });
+const parseLimit = toIntWithinRange({ min: 1, max: 100, byDefault: 100 });
 
-export const parseGetParams = (params : {clientId: string, channel: string, after?: any, limit?: any} = {clientId: '', channel: '', after: '', limit: ''}): Error | {} => {
+export const parseGetParams = (params: { clientId: string, channel: string, after?: any, limit?: any } = { clientId: '', channel: '', after: '', limit: '' }): Error | {} => {
   const clientId = nonEmptyString(params.clientId);
   if (!clientId)
     return new Error('Invalid Client ID');
@@ -48,7 +48,7 @@ export const parseGetParams = (params : {clientId: string, channel: string, afte
   };
 };
 
-export const parsePostParams = (params : {clientId: string, channel: string, from: string, type:string, data?: {}} = {clientId: '', channel: '', from: '', type: '', data: ''}) : Error | {clientId: string, channel: string, event: any} => {
+export const parsePostParams = (params: { clientId: string, channel: string, from: string, type: string, data?: {} } = { clientId: '', channel: '', from: '', type: '', data: '' }): Error | { clientId: string, channel: string, event: any } => {
   const clientId = nonEmptyString(params.clientId);
   if (!clientId)
     return new Error('Invalid Client ID');
@@ -75,14 +75,14 @@ export const parsePostParams = (params : {clientId: string, channel: string, fro
   }
 
   const event = hasData
-    ? {type, from, data}
-    : {type, from};
+    ? { type, from, data }
+    : { type, from };
 
-  return {clientId, channel, event};
+  return { clientId, channel, event };
 };
 
 
-export const parseLatestGetParams = (params: {channel: string, limit?: number} = {channel: '', limit: 0}) : Error | {channel: string, limit: number} => {
+export const parseLatestGetParams = (params: { channel: string, limit?: number } = { channel: '', limit: 0 }): Error | { channel: string, limit: number } => {
 
   const channel = nonEmptyString(params.channel);
   if (!channel)
@@ -95,4 +95,3 @@ export const parseLatestGetParams = (params: {channel: string, limit?: number} =
     limit
   };
 };
- 

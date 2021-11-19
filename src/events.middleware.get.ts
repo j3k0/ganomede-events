@@ -10,13 +10,13 @@
 //
 // Reponds with a JSON array of events (see README.md)
 //
-import {Request, Response, InvalidContentError, DefiniteHttpError} from 'restify';
+import { Request, Response, InvalidContentError, DefiniteHttpError } from 'restify';
 import { NextFunction } from 'express';
-import {parseGetParams}  from './parse-http-params';
-import {pollForEvents} from './poll-for-events';
+import { parseGetParams } from './parse-http-params';
+import { pollForEvents } from './poll-for-events';
 
 import { Poll } from './poll';
-import {logger} from './logger';
+import { logger } from './logger';
 import bunyan from 'bunyan';
 import { EventsStore } from './events.store';
 
@@ -24,17 +24,17 @@ export const createMiddleware = (
   poll: Poll, // = createPoll,
   store: EventsStore,
   log: bunyan = logger) => (req: Request, res: Response, next: NextFunction) => {
-  const params = parseGetParams(req.params);
-  if (params instanceof Error)
-    return next(new InvalidContentError(params.message));
+    const params = parseGetParams(req.params);
+    if (params instanceof Error)
+      return next(new InvalidContentError(params.message));
 
-  pollForEvents(store, poll, params, (err: Error|DefiniteHttpError|null, events: []) => {
-    if (err) {
-      log.error(err);
-      return next(err);
-    }
+    pollForEvents(store, poll, params, (err: Error | DefiniteHttpError | null, events: []) => {
+      if (err) {
+        log.error(err);
+        return next(err);
+      }
 
-    res.json(events);
-    next();
-  });
-};
+      res.json(events);
+      next();
+    });
+  };

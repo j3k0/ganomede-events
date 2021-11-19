@@ -1,17 +1,17 @@
 // unit tests for events.middleware.get
 
 import td from 'testdouble';
-import {Request, Response, InternalServerError, InvalidContentError} from 'restify';
+import { Request, Response, InternalServerError, InvalidContentError } from 'restify';
 import { createMiddleware } from '../src/events.middleware.get';
-import {parseGetParams} from '../src/parse-http-params';
-import {expect} from 'chai';  
+import { parseGetParams } from '../src/parse-http-params';
+import { expect } from 'chai';
 import { EventsStore } from '../src/events.store';
 import { Poll } from '../src/poll';
 import { NextFunction } from 'express';
 import Logger from 'bunyan';
-const {anything, isA} = td.matchers;
-const {verify, when} = td;
-const calledOnce = {times: 1, ignoreExtraArgs: true};
+const { anything, isA } = td.matchers;
+const { verify, when } = td;
+const calledOnce = { times: 1, ignoreExtraArgs: true };
 
 describe('events.middleware.get', () => {
   let poll: Poll;
@@ -25,12 +25,12 @@ describe('events.middleware.get', () => {
   const FAILING_LOAD_CHANNEL = 'failing-load-channel';
   const EMPTY_CHANNEL = 'empty-channel';
   const NON_EMPTY_CHANNEL = 'non-empty-channel';
-  const NON_EMPTY_EVENT = {id: 2};
+  const NON_EMPTY_EVENT = { id: 2 };
   const TRIGGER_CHANNEL = 'trigger-channel';
-  const TRIGGER_EVENT = {id: 1};
+  const TRIGGER_EVENT = { id: 1 };
   const FAILING_POLL_CHANNEL = 'failing-poll-channel';
 
-  const testChannels: {[key: string]: () => void} = {};
+  const testChannels: { [key: string]: () => void } = {};
 
   // NON_EMPTY_CHANNEL:
   //  - has 1 event
@@ -76,7 +76,7 @@ describe('events.middleware.get', () => {
       .thenCallback(null, []);
 
     when(poll.listen(TRIGGER_CHANNEL, anything()))
-      .thenDo((channel: string, callback: ((e: Error|null, m: string|null|number)  => void)) => {
+      .thenDo((channel: string, callback: ((e: Error | null, m: string | null | number) => void)) => {
         when(store.loadEvents(TRIGGER_CHANNEL, anything(), td.callback))
           .thenCallback(null, [TRIGGER_EVENT]);
         callback(null, TRIGGER_EVENT.id);
@@ -178,8 +178,8 @@ describe('events.middleware.get', () => {
     const channel = 'channel';
 
     it('parses after to be int within [0, MAX_SAFE_INTEGER]', () => {
-      const t = (desiredAfter: number|undefined|string|{}, expected: number) => {
-        const actual = parseGetParams({clientId, channel, after: desiredAfter});
+      const t = (desiredAfter: number | undefined | string | {}, expected: number) => {
+        const actual = parseGetParams({ clientId, channel, after: desiredAfter });
         expect((actual as any)['after']).to.equal(expected);
       };
 
@@ -196,8 +196,8 @@ describe('events.middleware.get', () => {
     });
 
     it('parses liimt to be int within [1, 100]', () => {
-      const t = (desiredLimit: number|undefined|string|{}, expected: number) => {
-        const actual = parseGetParams({clientId, channel, limit: desiredLimit});
+      const t = (desiredLimit: number | undefined | string | {}, expected: number) => {
+        const actual = parseGetParams({ clientId, channel, limit: desiredLimit });
         expect((actual as any)['limit']).to.equal(expected);
       };
 
@@ -214,7 +214,7 @@ describe('events.middleware.get', () => {
     });
 
     it('defaults after/limit to 0/100', () => {
-      expect(parseGetParams({clientId, channel})).to.eql({
+      expect(parseGetParams({ clientId, channel })).to.eql({
         clientId,
         channel,
         after: 0,
@@ -230,30 +230,30 @@ describe('events.middleware.get', () => {
         expect((actual as Error).message).to.equal('Invalid Client ID');
       };
 
-      t({channel});
-      t({clientId: '', channel});
-      t({clientId: 42, channel});
-      t({clientId: false, channel});
-      t({clientId: undefined, channel});
+      t({ channel });
+      t({ clientId: '', channel });
+      t({ clientId: 42, channel });
+      t({ clientId: false, channel });
+      t({ clientId: undefined, channel });
     });
 
     it('channel must be non-empty string', () => {
-      const t = (input:any) => {
+      const t = (input: any) => {
         const actual = parseGetParams(input);
         expect(actual).to.be.instanceof(Error);
         expect((actual as Error).message).to.equal('Invalid Channel');
       };
 
-      t({clientId});
-      t({channel: '', clientId});
-      t({channel: 42, clientId});
-      t({channel: false, clientId});
-      t({channel: undefined, clientId});
+      t({ clientId });
+      t({ channel: '', clientId });
+      t({ channel: 42, clientId });
+      t({ channel: false, clientId });
+      t({ channel: undefined, clientId });
     });
 
     it('afterExplicitlySet is true, when after is found in params', () => {
-      expect(parseGetParams({channel, clientId, after: '1'})).to.have.property('afterExplicitlySet', true);
-      expect(parseGetParams({channel, clientId})).to.have.property('afterExplicitlySet', false);
+      expect(parseGetParams({ channel, clientId, after: '1' })).to.have.property('afterExplicitlySet', true);
+      expect(parseGetParams({ channel, clientId })).to.have.property('afterExplicitlySet', false);
     });
   });
 });

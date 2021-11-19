@@ -1,8 +1,8 @@
 
 import supertest from 'supertest';
-import {createServer} from '../src/server';
-import {createPingRouter} from '../src/ping.router';
-import {config} from '../config';
+import { createServer } from '../src/server';
+import { createPingRouter } from '../src/ping.router';
+import { config } from '../config';
 
 describe('ping-router', () => {
   const server = createServer();

@@ -1,58 +1,58 @@
 
-import {zeroIfNaN} from './utils';
-import {logger} from './logger';
-import {config} from '../config';
-import bunyan from 'bunyan'; 
+import { zeroIfNaN } from './utils';
+import { logger } from './logger';
+import { config } from '../config';
+import bunyan from 'bunyan';
 import { PubSub } from './redis.pubsub';
 
-export class Poll{
+export class Poll {
 
   pubsub: PubSub;
   log: bunyan;
   pollTimeout: number;
   setTimeout: typeof global.setTimeout;
   clearTimeout: typeof global.clearTimeout;
-  logError = (err: Error|null) => err && this.log.error(err);
+  logError = (err: Error | null) => err && this.log.error(err);
 
   constructor(pubsub: PubSub,
     log: bunyan = logger,
     pollTimeout = zeroIfNaN(config.pollTimeout),
     setTimeout = global.setTimeout,
-    clearTimeout = global.clearTimeout){
-      this.pubsub = pubsub;
-      this.log = log;
-      this.pollTimeout = pollTimeout;
-      this.setTimeout = setTimeout;
-      this.clearTimeout = clearTimeout;
-    }
- 
-    public listen = (channel?: string, callback?: ((e: Error|null, m: string|null|number)  => void | boolean) | null) => {
+    clearTimeout = global.clearTimeout) {
+    this.pubsub = pubsub;
+    this.log = log;
+    this.pollTimeout = pollTimeout;
+    this.setTimeout = setTimeout;
+    this.clearTimeout = clearTimeout;
+  }
 
-      const done = (err: Error|null, message: string|null) => {
-        if (timeoutId) {
-          this.clearTimeout(timeoutId);
-          timeoutId = null;
-        }
-        if (handler) {
-          this.pubsub?.unsubscribe(channel!, handler, this.logError);
-          handler = null;
-        }
-        if (callback) {
-          const cb = callback;
-          callback = null;
-          cb(err, message);
-        }
-      };
-  
-      const timeout = () => done(null, null);
-      let timeoutId : null | ReturnType<typeof global.setTimeout> = this.setTimeout(timeout, this.pollTimeout);
-      let handler : null | ((message:any)=>void)  = (message: any) => done(null, message);
-      this.pubsub.subscribe(channel!, handler, this.logError);
+  public listen = (channel?: string, callback?: ((e: Error | null, m: string | null | number) => void | boolean) | null) => {
+
+    const done = (err: Error | null, message: string | null) => {
+      if (timeoutId) {
+        this.clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      if (handler) {
+        this.pubsub?.unsubscribe(channel!, handler, this.logError);
+        handler = null;
+      }
+      if (callback) {
+        const cb = callback;
+        callback = null;
+        cb(err, message);
+      }
     };
-  
-    public emit = (channel: string, message: string, callback: (e: Error|null) => void) => {
-      this.pubsub.publish(channel, message, callback);
-    };
+
+    const timeout = () => done(null, null);
+    let timeoutId: null | ReturnType<typeof global.setTimeout> = this.setTimeout(timeout, this.pollTimeout);
+    let handler: null | ((message: any) => void) = (message: any) => done(null, message);
+    this.pubsub.subscribe(channel!, handler, this.logError);
+  };
+
+  public emit = (channel: string, message: string, callback: (e: Error | null) => void) => {
+    this.pubsub.publish(channel, message, callback);
+  };
 }
 
 // export const createPoll = (

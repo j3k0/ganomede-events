@@ -1,6 +1,6 @@
 
 import td from 'testdouble';
-import {RedisClient} from 'redis'
+import { RedisClient } from 'redis'
 
 (td as any)['print'] = (what: any) => {
   const message = td.explain(what).description;
@@ -17,12 +17,12 @@ export const prepareRedisClient = (cb: (r: RedisClient) => void) =>
   (done: () => void) => {
 
 
-    let redisClient:any = td.object(['zrange', 'mget', 'quit', 'set', 'on', 'subscribe', 'multi', 'get', 'publish', 'subscribe']);
-    const handlers:{[type: string]: Array<(channel:string,message:string) => void>} = {};
-    redisClient.on = (type:string, handler:(channel:string,message:string) => void) => {
+    let redisClient: any = td.object(['zrange', 'mget', 'quit', 'set', 'on', 'subscribe', 'multi', 'get', 'publish', 'subscribe']);
+    const handlers: { [type: string]: Array<(channel: string, message: string) => void> } = {};
+    redisClient.on = (type: string, handler: (channel: string, message: string) => void) => {
       handlers[type] = (handlers[type] || []).concat(handler);
     }
-    redisClient.callHandlers = (type:string, channel:string, message:string):void => {
+    redisClient.callHandlers = (type: string, channel: string, message: string): void => {
       handlers[type].forEach(handler => handler(channel, message));
     }
     cb(redisClient);
@@ -53,7 +53,7 @@ export const testableWhen = (isTestRunnable: () => boolean, test: (x: () => void
     if (isTestRunnable())
       test(done);
     else
-    (that as any).skip && (that as any).skip();
+      (that as any).skip && (that as any).skip();
   };
 };
 

@@ -1,12 +1,12 @@
 
-import {EventEmitter} from 'events';
+import { EventEmitter } from 'events';
 import lodash from 'lodash';
-import {Cursor} from './Cursor';
-import {EventsClient} from './EventsClient';
-import {config} from '../../config';
-import {setImmediate} from 'async';
+import { Cursor } from './Cursor';
+import { EventsClient } from './EventsClient';
+import { config } from '../../config';
+import { setImmediate } from 'async';
 
-const noop = () => {};
+const noop = () => { };
 
 // Some events are special, and have nothing to do with our channles,
 // we should not start HTTP request for them. should not monitor them:
@@ -20,11 +20,11 @@ const ignoreChannels = [
 
 export class Client extends EventEmitter {
 
-  client:EventsClient;
+  client: EventsClient;
   polls: any;
   cursors: any;
 
-  constructor (clientId: string, {
+  constructor(clientId: string, {
     secret = '', // [required]
     agent = '',  // [optional] http/https agent to use https://nodejs.org/api/http.html#http_class_http_agent
     protocol = 'http',
@@ -54,12 +54,12 @@ export class Client extends EventEmitter {
     this.cursors = {}; // channel -> cursor
   }
 
-  checkForDrain (): void {
+  checkForDrain(): void {
     if (lodash.values(this.polls).every(status => !status))
       this.emit('drain');
   }
 
-  startPolling (channel: string): void {
+  startPolling(channel: string): void {
     if (this.polls[channel])
       return;
 
@@ -90,7 +90,7 @@ export class Client extends EventEmitter {
     });
   }
 
-  on (channel: string, handler: (...args: any[]) => void) : any{
+  on(channel: string, handler: (...args: any[]) => void): any {
     // TODO
     // perhaps print warnings of some kind
     if (!ignoreChannels.includes(channel))
@@ -100,8 +100,8 @@ export class Client extends EventEmitter {
     return this;
   }
 
-  send (channel: string, eventArg: {from: string, type: string, data?: any}, callback: ((e: Error, h: any) => void) = noop) {
-    const {from, type, data} = eventArg;
+  send(channel: string, eventArg: { from: string, type: string, data?: any }, callback: ((e: Error, h: any) => void) = noop) {
+    const { from, type, data } = eventArg;
     const hasData = eventArg.hasOwnProperty('data');
 
     if (ignoreChannels.includes(channel))
@@ -117,10 +117,10 @@ export class Client extends EventEmitter {
       return setImmediate(callback, new TypeError('data must be non-falsy object'));
 
     const event = hasData
-      ? {from, type, data}
-      : {from, type};
+      ? { from, type, data }
+      : { from, type };
 
     this.client.sendEvent(channel, event, callback);
   }
 }
- 
+

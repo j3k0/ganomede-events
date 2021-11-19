@@ -1,7 +1,7 @@
 
 import util from 'util';
 import restify, { DefiniteHttpError } from 'restify';
-import {logger} from './logger';
+import { logger } from './logger';
 import { NextFunction } from 'express';
 
 
@@ -60,7 +60,7 @@ const severity = {
   debug: 'debug',  // (20): Anything else, i.e. too verbose to be included in "info" level.
   trace: 'trace'   // (10): Logging from external libraries used by your app or very detailed application logging.
 };
-const log : {[key: string]: any } = {};
+const log: { [key: string]: any } = {};
 
 log[severity.fatal] = logger.fatal;
 log[severity.error] = logger.error;
@@ -73,7 +73,7 @@ class GanomedeError extends Error {
 
   statusCode: number = 0;
   severity: string;
-  constructor (...messageArgs: any) {
+  constructor(...messageArgs: any) {
     super();
     this.name = this.constructor.name;
     this.severity = severity.error;
@@ -101,7 +101,7 @@ class GanomedeError extends Error {
 //   //   "message": "Invalid or missing User ID" }
 export class RequestValidationError extends GanomedeError {
 
-  constructor (name: string, ...messageArgs: any) {
+  constructor(name: string, ...messageArgs: any) {
     super(...messageArgs);
     this.name = name;
     this.statusCode = 400;
@@ -110,7 +110,7 @@ export class RequestValidationError extends GanomedeError {
 }
 
 export class InvalidAuthTokenError extends GanomedeError {
-  constructor () {
+  constructor() {
     super('Invalid auth token');
     this.statusCode = 401;
     this.severity = severity.info;
@@ -118,7 +118,7 @@ export class InvalidAuthTokenError extends GanomedeError {
 }
 
 export class InvalidCredentialsError extends GanomedeError {
-  constructor () {
+  constructor() {
     super('Invalid credentials');
     this.statusCode = 401;
     this.severity = severity.info;
@@ -137,13 +137,13 @@ const toRestError = (error: GanomedeError) => {
 };
 
 const captureStack = () => {
-  const o = {stack: ''};
+  const o = { stack: '' };
   Error.captureStackTrace(o, captureStack);
   return o.stack;
 };
 
 // Kept forgetting `next` part, so let's change this to (next, err).
-export const sendHttpError = (next: NextFunction, err: Error|DefiniteHttpError) => {
+export const sendHttpError = (next: NextFunction, err: Error | DefiniteHttpError) => {
   // When we have an instance of GanomedeError, it means stuff that's defined here, in this file.
   // So those have `statusCode` and convertable to rest errors.
   // In case they don't, we die (because programmers error ("upcast" it) not runtime's).
@@ -169,7 +169,7 @@ export const sendHttpError = (next: NextFunction, err: Error|DefiniteHttpError) 
   //
   // Though we rely on lower levels to print those kinds of errors,
   // we still must know the place sendHttpError was called from.
-  logger.error(err, {sendHttpErrorStack: captureStack()});
+  logger.error(err, { sendHttpErrorStack: captureStack() });
   next(err);
 };
 

@@ -1,12 +1,12 @@
 // unit tests for events.middleware.get
 
-import {expect} from 'chai';
+import { expect } from 'chai';
 import supertest from 'supertest';
-import {createServer} from '../src/server';
-import {config} from '../config';
-import {latest} from '../src/latest.router';
-import {parseLatestGetParams} from '../src/parse-http-params';
-import redis, { RedisClient } from 'redis';
+import { createServer } from '../src/server';
+import { config } from '../config';
+import { latest } from '../src/latest.router';
+import { parseLatestGetParams } from '../src/parse-http-params';
+import { RedisClient } from 'redis';
 import td from 'testdouble';
 
 const url = `${config.http.prefix}/latest`;
@@ -15,29 +15,29 @@ const NON_EMPTY_CHANNEL = 'non-empty-channel';
 
 let redisClient: RedisClient;
 
-describe('Testing ParseLatestGetParams', () => {
-  it('Empty params to be null', () => {
+describe('parse-http-params', () => {
+  it('Expects a configuration object to be passed', () => {
     const parsed = parseLatestGetParams();
     expect(parsed).to.be.instanceof(Error);
   });
 
-  it('defaults channel/limit to ' + NON_EMPTY_CHANNEL + '/100', () => {
-    const parsed = parseLatestGetParams({channel: NON_EMPTY_CHANNEL});
+  it('Set the limits to 100 be default', () => {
+    const parsed = parseLatestGetParams({ channel: NON_EMPTY_CHANNEL });
     expect(parsed).to.eql({
       channel: NON_EMPTY_CHANNEL,
       limit: 100
     });
   });
 
-  it('Params channel/limit to ' + NON_EMPTY_CHANNEL + '/20', () => {
-    const parsed = parseLatestGetParams({channel: NON_EMPTY_CHANNEL, limit: 20});
+  it('Use the provided limit in the config object', () => {
+    const parsed = parseLatestGetParams({ channel: NON_EMPTY_CHANNEL, limit: 20 });
     expect(parsed).to.eql({
       channel: NON_EMPTY_CHANNEL,
       limit: 20
     });
   });
 
-  it('channel must be non-empty string', () => {
+  it('Expect the channel to  be non-empty string', () => {
     const t = (input: any) => {
       const actual = parseLatestGetParams(input);
       expect(actual).to.be.instanceof(Error);
@@ -45,10 +45,10 @@ describe('Testing ParseLatestGetParams', () => {
     };
 
     t({});
-    t({channel: ''});
-    t({channel: 42});
-    t({channel: false});
-    t({channel: undefined});
+    t({ channel: '' });
+    t({ channel: 42 });
+    t({ channel: false });
+    t({ channel: undefined });
   });
 });
 
@@ -88,35 +88,35 @@ describe('events.latest.get', () => {
     server.close(done);
   });
 
-  it(`returns the array of events`, (done) => {
+  it(`returns the list of events for non-empty channel`, (done) => {
 
     td.when(redisClient.zrange(`${NON_EMPTY_CHANNEL}:keys`, -1, -1, td.callback))
-    .thenCallback(null, ['my-event-id']);
+      .thenCallback(null, ['my-event-id']);
 
     td.when(redisClient.mget(['my-event-id'], td.callback))
-    .thenCallback(null, ['{"stuff":"things"}']);
+      .thenCallback(null, ['{"stuff":"things"}']);
 
     supertest(server)
-        .get(url)
-        .expect(200)
-        .query({channel: NON_EMPTY_CHANNEL, limit:1, secret:process.env.API_SECRET})
-        .end((err, res) => {
-          expect(JSON.stringify(res.body)).to.equal('[{"stuff":"things"}]');
-          expect(err).to.be.null;
-          expect(res.status).to.equal(200);
-          done();
-        });
+      .get(url)
+      .expect(200)
+      .query({ channel: NON_EMPTY_CHANNEL, limit: 1, secret: process.env.API_SECRET })
+      .end((err, res) => {
+        expect(JSON.stringify(res.body)).to.equal('[{"stuff":"things"}]');
+        expect(err).to.be.null;
+        expect(res.status).to.equal(200);
+        done();
+      });
   });
 
   it(`fails with 401 if API_SECRET is incorrect`, (done) => {
     supertest(server)
-    .get(url)
-    .expect(401)
-    .query({channel: NON_EMPTY_CHANNEL, limit:1})
-    .end((err, res) => {
-      expect(res.status).to.equal(401);
-      done();
-    });
+      .get(url)
+      .expect(401)
+      .query({ channel: NON_EMPTY_CHANNEL, limit: 1 })
+      .end((err, res) => {
+        expect(res.status).to.equal(401);
+        done();
+      });
   });
 
   /*const testRequestParams = (url) => {

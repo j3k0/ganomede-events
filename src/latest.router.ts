@@ -1,12 +1,12 @@
 
-import {requireSecret}  from './middlewares';
-import {createStore as createEventsStore, EventsStore} from './events.store';
-import {createStore as createRedisStore, RedisStore} from './redis.store';
+import { requireSecret } from './middlewares';
+import { createStore as createEventsStore, EventsStore } from './events.store';
+import { createStore as createRedisStore, RedisStore } from './redis.store';
 import { Server } from 'restify';
 import { RedisClient } from 'redis';
 import { createMiddleware as createMiddlewareLatest } from './latest.middleware.get';
 
-export const latest = (prefix: string, server: Server, redisClient: RedisClient) : void=> {
+export const latest = (prefix: string, server: Server, redisClient: RedisClient): void => {
 
 
   const itemsStore: RedisStore = createRedisStore(redisClient);

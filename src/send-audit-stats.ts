@@ -1,9 +1,9 @@
 // A restify server.on('after', ...) handler
 //
 // Will send requests statistics to a statsd server
-import { Request, Response } from 'restify'; 
+import { Request, Response } from 'restify';
 import { NextFunction } from 'express';
-import {createClient} from './statsd-wrapper';
+import { createClient } from './statsd-wrapper';
 
 const stats = createClient(undefined);
 

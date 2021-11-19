@@ -7,20 +7,20 @@ export const errors = {
   invalidHandler: 'invalid handler'
 };
 
-export class PubSub{
+export class PubSub {
 
   redisPubClient: RedisClient;
   redisSubClient: RedisClient;
 
-  isSubscribed:{[type: string]: boolean}= {};
-  channelHandlers :{[type: string]: Array<(message:string) => void>}= {};
+  isSubscribed: { [type: string]: boolean } = {};
+  channelHandlers: { [type: string]: Array<(message: string) => void> } = {};
 
-  constructor(redisPubClient: RedisClient, redisSubClient: RedisClient){
+  constructor(redisPubClient: RedisClient, redisSubClient: RedisClient) {
     this.redisPubClient = redisPubClient;
     this.redisSubClient = redisSubClient;
 
     const isValidClient = (redisClient: RedisClient) =>
-    typeof redisClient === 'object' && redisClient !== null;
+      typeof redisClient === 'object' && redisClient !== null;
 
     if (!isValidClient(redisPubClient) || !isValidClient(redisSubClient))
       throw new Error(errors.invalidClient);
@@ -28,7 +28,7 @@ export class PubSub{
     // Listen for messages
     redisSubClient.on('message', (channel: string, message: string) => {
       // logger.info({channel, nHandlers:this.getChannelHandlers(channel).length},
-        // 'message received from redis: ' + message);
+      // 'message received from redis: ' + message);
       this.getChannelHandlers(channel).forEach(
         (handler) => handler(message));
     });
@@ -36,20 +36,20 @@ export class PubSub{
 
   private isValidMessage = (msg: any) => (
     typeof msg === 'number' ||
-      typeof msg === 'string' ||
-      typeof msg === 'object' && msg instanceof Buffer);
+    typeof msg === 'string' ||
+    typeof msg === 'object' && msg instanceof Buffer);
 
   private isValidHandler = (hndlr: any) =>
     typeof hndlr === 'function';
 
-   // List of handlers for each channel
-   private addChannelHandler = (channel: string, handler: (message:string) => void) => {
+  // List of handlers for each channel
+  private addChannelHandler = (channel: string, handler: (message: string) => void) => {
     let handlers = this.channelHandlers[channel];
     if (!handlers)
       handlers = this.channelHandlers[channel] = [];
     handlers.push(handler);
   };
-  private removeChannelHandler = (channel: string, handler: (message:string) => void) => {
+  private removeChannelHandler = (channel: string, handler: (message: string) => void) => {
     const handlers = this.channelHandlers[channel];
     const index = handlers.indexOf(handler);
     if (index >= 0)
@@ -58,7 +58,7 @@ export class PubSub{
   private getChannelHandlers = (channel: string) =>
     this.channelHandlers[channel] || [];
 
-  publish (channel: string, message: string, cb: (e: Error|null)=> void)  : void {
+  publish(channel: string, message: string, cb: (e: Error | null) => void): void {
 
     // logger.info({channel}, 'pubsub.publish: ' + message);
     if (!this.isValidMessage(message))
@@ -67,7 +67,7 @@ export class PubSub{
     this.redisPubClient.publish(channel, message, cb);
   }
 
-  subscribe (channel: string, handler: (message:string) => void, cb: (e: Error|null)=> void): void {
+  subscribe(channel: string, handler: (message: string) => void, cb: (e: Error | null) => void): void {
 
     // logger.info({channel}, 'pubsub.subscrcallHandlersibe');
     if (!this.isValidHandler(handler))
@@ -83,7 +83,7 @@ export class PubSub{
     }
   }
 
-  unsubscribe (channel: string, handler: (message:string) => void, cb: (e: Error|null)=> void): void {
+  unsubscribe(channel: string, handler: (message: string) => void, cb: (e: Error | null) => void): void {
 
     // logger.info({channel}, 'pubsub.unsubscribe');
     if (!this.isValidHandler(handler))
@@ -177,4 +177,3 @@ export class PubSub{
 //     }
 //   };
 // };
- 

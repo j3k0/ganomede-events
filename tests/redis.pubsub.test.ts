@@ -1,13 +1,13 @@
 
-import {expect} from 'chai';
+import { expect } from 'chai';
 
 import async from 'async';
 import td from 'testdouble';
-import {PubSub}  from '../src/redis.pubsub';
-import {prepareRedisClient, testableWhen} from './helper';
+import { PubSub } from '../src/redis.pubsub';
+import { prepareRedisClient, testableWhen } from './helper';
 import { RedisClient } from 'redis';
-const {verify, when} = td;
-const {anything, isA} = td.matchers;
+const { verify, when } = td;
+const { anything, isA } = td.matchers;
 
 describe('redis.pubsub', function () {
 
@@ -15,7 +15,7 @@ describe('redis.pubsub', function () {
   let redisPubClient: RedisClient;
   let redisSubClient: RedisClient;
   let callback: (e: Error | null) => void;
-  let handler: (message:string) => void;
+  let handler: (message: string) => void;
 
   const OK_CHANNEL = 'ok-channel';
   const FAIL_CHANNEL = 'fail-channel';
@@ -23,7 +23,7 @@ describe('redis.pubsub', function () {
 
   beforeEach(() => {
 
-    handler = td.function('handler') as (message:string) => void;
+    handler = td.function('handler') as (message: string) => void;
     callback = td.function('callback') as (e: Error | null) => void;
 
     redisPubClient = td.object(['publish']) as RedisClient;
@@ -99,9 +99,9 @@ describe('redis.pubsub', function () {
 
   describe('integration tests', function () {
 
-    let pubsub: PubSub|null;
-    let redisPubClient: RedisClient|null;
-    let redisSubClient: RedisClient|null;
+    let pubsub: PubSub | null;
+    let redisPubClient: RedisClient | null;
+    let redisSubClient: RedisClient | null;
 
     beforeEach(prepareRedisClient((client) => redisPubClient = client));
     beforeEach(prepareRedisClient((client) => redisSubClient = client));
@@ -125,11 +125,11 @@ describe('redis.pubsub', function () {
     it('notify subscribers on publish', testableWhen(hasPubSub, (done) => {
 
       when(redisPubClient?.publish(anything(), anything()))
-      .thenCallback(null);
+        .thenCallback(null);
 
       when(redisSubClient?.subscribe(anything()))
-      .thenCallback(null);
- 
+        .thenCallback(null);
+
 
       // Create 4 subscribers
       const subscribers = [0, 1, 2, 3].map((index) =>
@@ -145,41 +145,41 @@ describe('redis.pubsub', function () {
       const ops: (((cb: (e: Error | null) => void) => void) | undefined)[] = subscribers.map((subscriber) =>
         pubsub?.subscribe.bind(pubsub, OK_CHANNEL, subscriber as any))
 
-      // Publish to OK_CHANNEL and FAIL_CHANNEL
-      .concat([
-        pubsub?.publish.bind(pubsub, OK_CHANNEL, OK_MESSAGE),
-        pubsub?.publish.bind(pubsub, FAIL_CHANNEL, OK_MESSAGE),
-        cb => { (redisSubClient as any).callHandlers('message', OK_CHANNEL, OK_MESSAGE); cb(null) },
-        cb => { (redisSubClient as any).callHandlers('message', FAIL_CHANNEL, OK_MESSAGE); cb(null) },
-        // make sure subscribers were called...
-        cb => setTimeout(cb, 10)
-      ])
+        // Publish to OK_CHANNEL and FAIL_CHANNEL
+        .concat([
+          pubsub?.publish.bind(pubsub, OK_CHANNEL, OK_MESSAGE),
+          pubsub?.publish.bind(pubsub, FAIL_CHANNEL, OK_MESSAGE),
+          cb => { (redisSubClient as any).callHandlers('message', OK_CHANNEL, OK_MESSAGE); cb(null) },
+          cb => { (redisSubClient as any).callHandlers('message', FAIL_CHANNEL, OK_MESSAGE); cb(null) },
+          // make sure subscribers were called...
+          cb => setTimeout(cb, 10)
+        ])
 
-      // Unsubscribe some from OK_CHANNEL
-      .concat(toUnsubscribe.map((i) =>
-        pubsub?.unsubscribe.bind(pubsub, OK_CHANNEL, subscribers[i] as any)))
+        // Unsubscribe some from OK_CHANNEL
+        .concat(toUnsubscribe.map((i) =>
+          pubsub?.unsubscribe.bind(pubsub, OK_CHANNEL, subscribers[i] as any)))
 
-      // Publish to OK_CHANNEL again
-      .concat([
-        pubsub?.publish.bind(pubsub, OK_CHANNEL, OK_MESSAGE),
-        cb => { (redisSubClient as any).callHandlers('message', OK_CHANNEL, OK_MESSAGE); cb(null) },
-        // make sure subscribers were called...
-        cb => setTimeout(cb, 10)
-      ]);
+        // Publish to OK_CHANNEL again
+        .concat([
+          pubsub?.publish.bind(pubsub, OK_CHANNEL, OK_MESSAGE),
+          cb => { (redisSubClient as any).callHandlers('message', OK_CHANNEL, OK_MESSAGE); cb(null) },
+          // make sure subscribers were called...
+          cb => setTimeout(cb, 10)
+        ]);
 
-      
+
       async.series(ops as any, (err, results) => {
-        
+
         expect(err).to.be.null;
 
         // Those that have been unsubscribed have been called once
         toUnsubscribe.forEach((index) => {
-          verify(subscribers[index](OK_MESSAGE), {times: 1});
+          verify(subscribers[index](OK_MESSAGE), { times: 1 });
         });
 
         // Those that stayed subscribed have been called twice
         keepSubscribed.forEach((index) => {
-          verify(subscribers[index](OK_MESSAGE), {times: 2});
+          verify(subscribers[index](OK_MESSAGE), { times: 2 });
         });
 
         done();

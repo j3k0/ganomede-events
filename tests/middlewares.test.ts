@@ -1,21 +1,21 @@
 
 import restify, { Request } from 'restify';
-import {requireAuth, requireSecret} from '../src/middlewares';
-import {expect} from 'chai';
+import { requireAuth, requireSecret } from '../src/middlewares';
+import { expect } from 'chai';
 import td from 'testdouble';
 
-interface IauthdbClient{
-  getAccount(token: string, cb?: (err: Error, redisResult: any)=> void): void;
+interface IauthdbClient {
+  getAccount(token: string, cb?: (err: Error, redisResult: any) => void): void;
 }
 
 describe('Middlewares', () => {
   describe('requireSecret()', () => {
     it('calls next() if req.ganomede.secretMatches', (done) => {
-      requireSecret({ganomede: {secretMatches: true} } as any, {} as any, done);
+      requireSecret({ ganomede: { secretMatches: true } } as any, {} as any, done);
     });
 
     it('calls next(error) if secret was not matched', (done) => {
-      requireSecret({ganomede: {secretMatches: false}} as any, {} as any, (err) => {
+      requireSecret({ ganomede: { secretMatches: false } } as any, {} as any, (err) => {
         expect(err).to.be.instanceof(restify.RestError);
         expect(err).to.have.property('restCode', 'InvalidCredentialsError');
         done();
@@ -25,11 +25,11 @@ describe('Middlewares', () => {
 
   describe('requireAuth()', () => {
     const authdbClient = td.object<IauthdbClient>(null as any);// td.object(['getAccount']);
-    const mw = requireAuth({authdbClient, secret: '42'});
+    const mw = requireAuth({ authdbClient, secret: '42' });
 
     it('token is valid', (done) => {
       const req = {
-        params: {token: 'token'},
+        params: { token: 'token' },
         ganomede: {}
       };
 
@@ -46,7 +46,7 @@ describe('Middlewares', () => {
 
     it('spoofing secret is valid', (done) => {
       const req = {
-        params: {token: '42.user'},
+        params: { token: '42.user' },
         ganomede: {}
       };
 
@@ -60,7 +60,7 @@ describe('Middlewares', () => {
 
     it('token is invalid', (done) => {
       const req = {
-        params: {token: 'oops'},
+        params: { token: 'oops' },
         ganomede: {}
       };
 
@@ -77,7 +77,7 @@ describe('Middlewares', () => {
 
     it('spoofing secret is invalid', (done) => {
       const req = {
-        params: {token: 'not-42.oops'},
+        params: { token: 'not-42.oops' },
         ganomede: {}
       };
 
@@ -93,7 +93,7 @@ describe('Middlewares', () => {
     });
 
     it('token is missing', (done) => {
-      mw({params: Object.create(null)} as any, {} as any, (err) => {
+      mw({ params: Object.create(null) } as any, {} as any, (err) => {
         expect(err).to.be.instanceof(restify.RestError);
         expect(err).to.have.property('restCode', 'InvalidAuthTokenError');
         done();

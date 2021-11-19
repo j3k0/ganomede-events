@@ -1,10 +1,10 @@
 
-import {RedisClient} from 'redis';
+import { RedisClient } from 'redis';
 import async from 'async';
-import {requireSecret} from './middlewares';
-import {createStore as createEventsStore, EventsStore} from './events.store';
-import {createStore as createRedisStore} from './redis.store';
-import {Poll} from './poll';
+import { requireSecret } from './middlewares';
+import { createStore as createEventsStore, EventsStore } from './events.store';
+import { createStore as createRedisStore } from './redis.store';
+import { Poll } from './poll';
 import { Server } from 'restify';
 import { PubSub } from './redis.pubsub';
 import { createMiddleware as createMiddlewareGet } from './events.middleware.get';

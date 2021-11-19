@@ -1,14 +1,14 @@
 
-import {expect} from 'chai';
+import { expect } from 'chai';
 import supertest from 'supertest';
-import {createServer} from '../src/server';
+import { createServer } from '../src/server';
 import redis from 'redis';
 import { RedisClient } from 'redis';
-import {createEventsRouter} from '../src/events.router';
-import {config} from '../config';
+import { createEventsRouter } from '../src/events.router';
+import { config } from '../config';
 
 (() => {
-  
+
 
 
   describe.skip('events-router', () => {
@@ -19,10 +19,10 @@ import {config} from '../config';
     before(done => {
       const retry_strategy = () =>
         new Error('skip-test');
-      redisClient = redis.createClient(config.redis.port, config.redis.host, {retry_strategy});
+      redisClient = redis.createClient(config.redis.port, config.redis.host, { retry_strategy });
       redisClient.duplicate = () =>
-        redisClient = redis.createClient(config.redis.port, config.redis.host, {retry_strategy});
-        createEventsRouter(config.http.prefix, server, redisClient);
+        redisClient = redis.createClient(config.redis.port, config.redis.host, { retry_strategy });
+      createEventsRouter(config.http.prefix, server, redisClient);
       redisClient.info((err) => {
         // Connection to redis failed, skipping integration tests.
         if (err && (err as any).origin && (err as any).origin.message === 'skip-test')
@@ -37,54 +37,54 @@ import {config} from '../config';
       server.close(done);
     });
 
-    const testGet =  (url: string, status: number, params: any, done: (r: any) => void, endExpect: (r: any) => void) => {
+    const testGet = (url: string, status: number, params: any, done: (r: any) => void, endExpect: (r: any) => void) => {
       return supertest(server)
-      .get(url)
-      .query({
-        secret: params.secret,
-        channel: params.channel,
-        after: params.afterId
-      })
-      .expect(status)
-      .then((res) => {
-        endExpect && endExpect(res);
-      }, (err) => {
-        expect(err).to.be.null;
-      })
-      .catch((error) => {
-        done(error);
-      });
+        .get(url)
+        .query({
+          secret: params.secret,
+          channel: params.channel,
+          after: params.afterId
+        })
+        .expect(status)
+        .then((res) => {
+          endExpect && endExpect(res);
+        }, (err) => {
+          expect(err).to.be.null;
+        })
+        .catch((error) => {
+          done(error);
+        });
     };
 
     const testPost = (url: string, status: number, params: any, done: (r: any) => void, endExpect: (r: any) => void) => {
       return supertest(server)
-      .post(url)
-      .send({
-        secret: params.secret,
-        channel: params.channel,
-        from: params.from,
-        type: params.type,
-        data: params.data
-      })
-      .expect(status)
-      .then((res) => {
-        endExpect && endExpect(res);
-      }, (err) => {
-        expect(err).to.be.null;
-      })
-      .catch((error) => {
-        done(error);
-      });
+        .post(url)
+        .send({
+          secret: params.secret,
+          channel: params.channel,
+          from: params.from,
+          type: params.type,
+          data: params.data
+        })
+        .expect(status)
+        .then((res) => {
+          endExpect && endExpect(res);
+        }, (err) => {
+          expect(err).to.be.null;
+        })
+        .catch((error) => {
+          done(error);
+        });
     };
 
-  // request parameters
+    // request parameters
     const url = `${config.http.prefix}/events`;
     const rightSecret = 'right';
     const wrongSecret = 'wrong';
     const channel1 = 'channel1';
     const channel2 = 'channel2';
 
-  // expectations
+    // expectations
     const okStatus = 200;
     const badStatus = 400;
     const unauthStatus = 401;
@@ -124,7 +124,7 @@ import {config} from '../config';
         channel: channel1
       }, done, (res) => {
         expect(res.header).to.have.property(typeProperty)
-        .and.have.string(jsonType);
+          .and.have.string(jsonType);
         expect(res.body).to.have.property('id');
         expect(res.body).to.have.property('timestamp');
         done();
@@ -172,7 +172,7 @@ import {config} from '../config';
         channel: channel1
       }, done, (res) => {
         expect(res.header).to.have.property(typeProperty)
-        .and.have.string(jsonType);
+          .and.have.string(jsonType);
         expect(res.body).to.have.property('id');
         eventId = res.body.id;
         expect(res.body).to.have.property('timestamp');
@@ -183,7 +183,7 @@ import {config} from '../config';
           afterId: eventId - 1
         }, done, (res) => {
           expect(res.header).to.have.property(typeProperty)
-          .and.have.string(jsonType);
+            .and.have.string(jsonType);
           expect(res.body).to.have.lengthOf(1);
           expect(res.body[0]).to.have.property('id', eventId);
           expect(res.body[0]).to.have.property('timestamp');
@@ -198,7 +198,7 @@ import {config} from '../config';
         channel: channel1
       }, done, (res) => {
         expect(res.header).to.have.property(typeProperty)
-        .and.have.string(jsonType);
+          .and.have.string(jsonType);
         expect(res.body).to.have.property('id');
         expect(res.body).to.have.property('timestamp');
       }).then(() => {
@@ -208,8 +208,8 @@ import {config} from '../config';
         }, done, () => {
           done();
         })
-      } 
-    );
+      }
+      );
     });
 
     it(`@ ${url}: 2 Valid POSTs followed by GET on ${channel1}`, (done) => {
@@ -219,12 +219,12 @@ import {config} from '../config';
         channel: channel1
       }, done, (res) => {
         expect(res.header).to.have.property(typeProperty)
-        .and.have.string(jsonType);
+          .and.have.string(jsonType);
         expect(res.body).to.have.property('id');
         eventId = res.body.id;
         expect(res.body).to.have.property('timestamp');
       }).then(() => {
-        return  testPost(url, okStatus, {
+        return testPost(url, okStatus, {
           secret: rightSecret,
           channel: channel1
         }, done, (res) => {
@@ -234,22 +234,22 @@ import {config} from '../config';
           expect(res.body).to.have.property('timestamp');
         });
       }
-    ).then(() => {
-      testGet(url, okStatus, {
-        secret: rightSecret,
-        channel: channel1,
-        afterId: eventId - 1
-      }, done, (res) => {
-        expect(res.header).to.have.property(typeProperty)
-          .and.have.string(jsonType);
-        expect(res.body).to.have.lengthOf(2);
-        expect(res.body[0]).to.have.property('id', eventId);
-        expect(res.body[0]).to.have.property('timestamp');
-        expect(res.body[1]).to.have.property('id', eventId + 1);
-        expect(res.body[1]).to.have.property('timestamp');
-        done();
+      ).then(() => {
+        testGet(url, okStatus, {
+          secret: rightSecret,
+          channel: channel1,
+          afterId: eventId - 1
+        }, done, (res) => {
+          expect(res.header).to.have.property(typeProperty)
+            .and.have.string(jsonType);
+          expect(res.body).to.have.lengthOf(2);
+          expect(res.body[0]).to.have.property('id', eventId);
+          expect(res.body[0]).to.have.property('timestamp');
+          expect(res.body[1]).to.have.property('id', eventId + 1);
+          expect(res.body[1]).to.have.property('timestamp');
+          done();
+        });
       });
-    });
     });
 
     it(`@ ${url}: Valid POST followed by GET on ${channel1} after added event`, (done) => {
@@ -259,7 +259,7 @@ import {config} from '../config';
         channel: channel1
       }, done, (res) => {
         expect(res.header).to.have.property(typeProperty)
-        .and.have.string(jsonType);
+          .and.have.string(jsonType);
         expect(res.body).to.have.property('id');
         eventId = res.body.id;
         expect(res.body).to.have.property('timestamp');
@@ -281,7 +281,7 @@ import {config} from '../config';
         channel: channel1
       }, done, (res) => {
         expect(res.header).to.have.property(typeProperty)
-        .and.have.string(jsonType);
+          .and.have.string(jsonType);
         expect(res.body).to.have.property('id');
         eventId = res.body.id;
         expect(res.body).to.have.property('timestamp');
@@ -296,20 +296,20 @@ import {config} from '../config';
           expect(res.body).to.have.property('timestamp');
         });
       }
-    ).then(() => {
-      testGet(url, okStatus, {
-        secret: rightSecret,
-        channel: channel1,
-        afterId: eventId
-      }, done, (res) => {
-        expect(res.header).to.have.property(typeProperty)
-          .and.have.string(jsonType);
-        expect(res.body).to.have.lengthOf(1);
-        expect(res.body[0]).to.have.property('id', eventId + 1);
-        expect(res.body[0]).to.have.property('timestamp');
-        done();
+      ).then(() => {
+        testGet(url, okStatus, {
+          secret: rightSecret,
+          channel: channel1,
+          afterId: eventId
+        }, done, (res) => {
+          expect(res.header).to.have.property(typeProperty)
+            .and.have.string(jsonType);
+          expect(res.body).to.have.lengthOf(1);
+          expect(res.body[0]).to.have.property('id', eventId + 1);
+          expect(res.body[0]).to.have.property('timestamp');
+          done();
+        });
       });
-    });
     });
 
     it(`@ ${url}: 3 Valid POSTs followed by GET on ${channel1} after first added event`, (done) => {
@@ -319,7 +319,7 @@ import {config} from '../config';
         channel: channel1
       }, done, (res) => {
         expect(res.header).to.have.property(typeProperty)
-        .and.have.string(jsonType);
+          .and.have.string(jsonType);
         expect(res.body).to.have.property('id');
         eventId = res.body.id;
         expect(res.body).to.have.property('timestamp');
@@ -334,32 +334,32 @@ import {config} from '../config';
           expect(res.body).to.have.property('timestamp');
         });
       }
-    ).then(() => {
-      return testPost(url, okStatus, {
-        secret: rightSecret,
-        channel: channel1
-      }, done, (res) => {
-        expect(res.header).to.have.property(typeProperty)
-          .and.have.string(jsonType);
-        expect(res.body).to.have.property('id');
-        expect(res.body).to.have.property('timestamp');
+      ).then(() => {
+        return testPost(url, okStatus, {
+          secret: rightSecret,
+          channel: channel1
+        }, done, (res) => {
+          expect(res.header).to.have.property(typeProperty)
+            .and.have.string(jsonType);
+          expect(res.body).to.have.property('id');
+          expect(res.body).to.have.property('timestamp');
+        });
+      }).then(() => {
+        testGet(url, okStatus, {
+          secret: rightSecret,
+          channel: channel1,
+          afterId: eventId
+        }, done, (res) => {
+          expect(res.header).to.have.property(typeProperty)
+            .and.have.string(jsonType);
+          expect(res.body).to.have.lengthOf(2);
+          expect(res.body[0]).to.have.property('id', eventId + 1);
+          expect(res.body[0]).to.have.property('timestamp');
+          expect(res.body[1]).to.have.property('id', eventId + 2);
+          expect(res.body[1]).to.have.property('timestamp');
+          done();
+        });
       });
-    }).then(() => {
-      testGet(url, okStatus, {
-        secret: rightSecret,
-        channel: channel1,
-        afterId: eventId
-      }, done, (res) => {
-        expect(res.header).to.have.property(typeProperty)
-          .and.have.string(jsonType);
-        expect(res.body).to.have.lengthOf(2);
-        expect(res.body[0]).to.have.property('id', eventId + 1);
-        expect(res.body[0]).to.have.property('timestamp');
-        expect(res.body[1]).to.have.property('id', eventId + 2);
-        expect(res.body[1]).to.have.property('timestamp');
-        done();
-      });
-    });
     });
 
     it(`@ ${url}: Valid GET and then POST before timeout on ${channel1}`, (done) => {
@@ -369,7 +369,7 @@ import {config} from '../config';
         channel: channel1
       }, done, (res) => {
         expect(res.header).to.have.property(typeProperty)
-        .and.have.string(jsonType);
+          .and.have.string(jsonType);
         expect(res.body).to.have.property('id');
         eventId = res.body.id;
         expect(res.body).to.have.property('timestamp');
@@ -380,7 +380,7 @@ import {config} from '../config';
           afterId: eventId
         }, done, (res) => {
           expect(res.header).to.have.property(typeProperty)
-          .and.have.string(jsonType);
+            .and.have.string(jsonType);
           expect(res.body).to.have.lengthOf(1);
           expect(res.body[0]).to.have.property('id', eventId + 1);
           expect(res.body[0]).to.have.property('timestamp');
@@ -391,7 +391,7 @@ import {config} from '../config';
           channel: channel1
         }, done, (res) => {
           expect(res.header).to.have.property(typeProperty)
-          .and.have.string(jsonType);
+            .and.have.string(jsonType);
           expect(res.body).to.have.property('id');
           expect(res.body).to.have.property('timestamp');
         });

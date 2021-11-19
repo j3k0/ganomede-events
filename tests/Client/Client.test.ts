@@ -1,15 +1,15 @@
-import {expect} from 'chai';
+import { expect } from 'chai';
 import td from 'testdouble';
-import {config} from '../../config';
+import { config } from '../../config';
 import { Cursor } from '../../src/client/Cursor';
 
 const url = require('url');
-import {Client} from '../../src/client/Client';
+import { Client } from '../../src/client/Client';
 
 describe('Client', () => {
   describe('new Client()', () => {
     it('default prefix is correct', () => {
-      const client = new Client('someId', {secret: '1'});
+      const client = new Client('someId', { secret: '1' });
       expect(client.client.pathPrefix).to.equal('/events/v1');
     });
   });
@@ -17,7 +17,7 @@ describe('Client', () => {
   describe('listening for events', () => {
     const createClient = () => {
       const client = new Client('clientId', Object.assign(
-        {secret: config.secret},
+        { secret: config.secret },
         url.parse('http://localhost:3000/events/v1')
       ));
 
@@ -34,8 +34,8 @@ describe('Client', () => {
         .thenDo((cursor: Cursor, cb: (...args: any[]) => void) => {
           ++nCalls;
           setImmediate(cb, null, [
-            {from: 'service', type: 'type'},
-            {from: 'service', type: 'type'},
+            { from: 'service', type: 'type' },
+            { from: 'service', type: 'type' },
           ]);
         });
 
@@ -63,7 +63,7 @@ describe('Client', () => {
 
     it('#once() works without rescheduling', (done) => {
       const client = createClient();
-      const expectedEvent = {from: 'ch', type: 'type'};
+      const expectedEvent = { from: 'ch', type: 'type' };
       let nEmits = 0;
       let nCalls = 0;
 
@@ -72,7 +72,7 @@ describe('Client', () => {
           ++nCalls;
           setImmediate(cb, null, [
             expectedEvent,
-            {from: 'ch', type: 'second event that will get "ignored"'}
+            { from: 'ch', type: 'second event that will get "ignored"' }
           ]);
         });
 
@@ -105,8 +105,8 @@ describe('Client', () => {
         .thenDo((cursor: Cursor, cb: (...args: any[]) => void) => {
           calls.push(cursor.channel as never);
           setImmediate(cb, null, [
-            {from: 'ch', type: 'type'},
-            {from: 'ch2', type: 'type'}
+            { from: 'ch', type: 'type' },
+            { from: 'ch2', type: 'type' }
           ]);
         });
 
@@ -145,7 +145,7 @@ describe('Client', () => {
       client.on('error', handler);
 
       // But we still want an ability to do something inbetween requests.
-      client.on('cycle', ({finished, next}, channel) => {
+      client.on('cycle', ({ finished, next }, channel) => {
         expect(channel).to.eql('ch');
         client.removeListener(channel, handler);
         ++cycleCount;
@@ -161,7 +161,7 @@ describe('Client', () => {
   describe('#send()', () => {
     const createClient = () => {
       const client = new Client('clientId', Object.assign(
-        {secret: config.secret},
+        { secret: config.secret },
         url.parse('http://localhost:3000/events/v1')
       ));
 
@@ -171,12 +171,12 @@ describe('Client', () => {
 
     it('sends events with data', (done) => {
       const client = createClient();
-      const reply = {id: 1, timestamp: Date.now()};
+      const reply = { id: 1, timestamp: Date.now() };
 
-      td.when(client.client.sendEvent('someplace', {from: 'me', type: 'x'}, td.callback))
+      td.when(client.client.sendEvent('someplace', { from: 'me', type: 'x' }, td.callback))
         .thenCallback(null, reply);
 
-      client.send('someplace', {from: 'me', type: 'x'}, (err: Error, header: any) => {
+      client.send('someplace', { from: 'me', type: 'x' }, (err: Error, header: any) => {
         expect(err).to.be.null;
         expect(header).to.eql(reply);
         done();

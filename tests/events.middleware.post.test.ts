@@ -1,18 +1,18 @@
 // unit tests for events.middleware.post
 
 import td from 'testdouble';
-import {Request, Response, InternalServerError, InvalidContentError} from 'restify';
-import {parsePostParams} from '../src/parse-http-params';
-import {expect} from 'chai'; 
-import {createMiddleware as createPostMiddlware} from '../src/events.middleware.post';
+import { Request, Response, InternalServerError, InvalidContentError } from 'restify';
+import { parsePostParams } from '../src/parse-http-params';
+import { expect } from 'chai';
+import { createMiddleware as createPostMiddlware } from '../src/events.middleware.post';
 import { EventsStore } from '../src/events.store';
 import { Poll } from '../src/poll';
 import { NextFunction } from 'express';
 import Logger from 'bunyan';
 
-const {anything, isA} = td.matchers;
-const {verify, when} = td;
-const calledOnce = {times: 1, ignoreExtraArgs: true};
+const { anything, isA } = td.matchers;
+const { verify, when } = td;
+const calledOnce = { times: 1, ignoreExtraArgs: true };
 
 describe('events.middleware.post', () => {
 
@@ -30,13 +30,13 @@ describe('events.middleware.post', () => {
   const SUCCESS_EVENT = {
     from: 'from',
     type: 'type',
-    data: {a: 1, b: 2}
+    data: { a: 1, b: 2 }
   };
   const SUCCESS_ID = 3;
   const SUCCESS_EVENT_WITH_ID = Object.assign(
-    {id: SUCCESS_ID}, SUCCESS_EVENT);
+    { id: SUCCESS_ID }, SUCCESS_EVENT);
 
-  const testChannels: {[key: string]: () => void} = {};
+  const testChannels: { [key: string]: () => void } = {};
 
   // FAILING_ADD_CHANNEL:
   //  - addEvent fails with a InternalServerError
@@ -74,7 +74,7 @@ describe('events.middleware.post', () => {
     when(poll.emit(anything(), anything(), td.callback))
       .thenCallback(new Error('unexpected poll.emit'));
 
-    log = td.object(['error', 'info'])  as Logger;
+    log = td.object(['error', 'info']) as Logger;
 
     middleware = createPostMiddlware(poll, store, log);
 
@@ -118,7 +118,7 @@ describe('events.middleware.post', () => {
   it('logs poll.emit failures to the console', () => {
     withChannel(FAILING_EMIT_CHANNEL);
     verify(next(), calledOnce);
-    verify(log.error(), {ignoreExtraArgs: true});
+    verify(log.error(), { ignoreExtraArgs: true });
   });
 
   it('responds with the added event', () => {
@@ -126,27 +126,27 @@ describe('events.middleware.post', () => {
     verify(next(), calledOnce);
     verify(next());
     verify(res.json(SUCCESS_EVENT_WITH_ID));
-    verify(log.error(), {times: 0, ignoreExtraArgs: true});
+    verify(log.error(), { times: 0, ignoreExtraArgs: true });
   });
 
   describe('parsePostParams()', () => {
     const from = 'service/v1';
     const type = 'new-something';
-    const data = {thing: true};
+    const data = { thing: true };
     const clientId = 'test-client';
     const channel = 'channel';
 
     it('parses valid stuff', () => {
-      expect(parsePostParams({from, type, data, clientId, channel})).to.eql({
+      expect(parsePostParams({ from, type, data, clientId, channel })).to.eql({
         clientId,
         channel,
-        event: {from, type, data},
+        event: { from, type, data },
       });
 
-      expect(parsePostParams({from, type, clientId, channel})).to.eql({
+      expect(parsePostParams({ from, type, clientId, channel })).to.eql({
         clientId,
         channel,
-        event: {from, type}
+        event: { from, type }
       });
     });
 
@@ -157,11 +157,11 @@ describe('events.middleware.post', () => {
         expect((actual as Error).message).to.equal('Invalid from');
       };
 
-      t({channel, clientId});
-      t({from: '', channel, clientId});
-      t({from: undefined, channel, clientId});
-      t({from: [], channel, clientId});
-      t({from: 42, channel, clientId});
+      t({ channel, clientId });
+      t({ from: '', channel, clientId });
+      t({ from: undefined, channel, clientId });
+      t({ from: [], channel, clientId });
+      t({ from: 42, channel, clientId });
     });
 
     it('type must be non-empty string', () => {
@@ -171,11 +171,11 @@ describe('events.middleware.post', () => {
         expect((actual as Error).message).to.equal('Invalid type');
       };
 
-      t({from, channel, clientId});
-      t({type: '', from, channel, clientId});
-      t({type: undefined, from, channel, clientId});
-      t({type: [], from, channel, clientId});
-      t({type: 42, from, channel, clientId});
+      t({ from, channel, clientId });
+      t({ type: '', from, channel, clientId });
+      t({ type: undefined, from, channel, clientId });
+      t({ type: [], from, channel, clientId });
+      t({ type: 42, from, channel, clientId });
     });
 
     it('data must be non-null object or not present', () => {
@@ -185,10 +185,10 @@ describe('events.middleware.post', () => {
         expect((actual as Error).message).to.equal('Invalid data');
       };
 
-      t({data: '', type, from, channel, clientId});
-      t({data: undefined, type, from, channel, clientId});
-      t({data: 42, type, from, channel, clientId});
-      t({data: null, type, from, channel, clientId});
+      t({ data: '', type, from, channel, clientId });
+      t({ data: undefined, type, from, channel, clientId });
+      t({ data: 42, type, from, channel, clientId });
+      t({ data: null, type, from, channel, clientId });
     });
 
     it('client id must be non-empty string', () => {
@@ -198,11 +198,11 @@ describe('events.middleware.post', () => {
         expect((actual as Error).message).to.equal('Invalid Client ID');
       };
 
-      t({channel});
-      t({clientId: '', channel});
-      t({clientId: 42, channel});
-      t({clientId: false, channel});
-      t({clientId: undefined, channel});
+      t({ channel });
+      t({ clientId: '', channel });
+      t({ clientId: 42, channel });
+      t({ clientId: false, channel });
+      t({ clientId: undefined, channel });
     });
 
     it('channel must be non-empty string', () => {
@@ -212,11 +212,11 @@ describe('events.middleware.post', () => {
         expect((actual as Error).message).to.equal('Invalid Channel');
       };
 
-      t({clientId});
-      t({channel: '', clientId});
-      t({channel: 42, clientId});
-      t({channel: false, clientId});
-      t({channel: undefined, clientId});
+      t({ clientId });
+      t({ channel: '', clientId });
+      t({ channel: 42, clientId });
+      t({ channel: false, clientId });
+      t({ channel: undefined, clientId });
     });
   });
 

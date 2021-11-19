@@ -1,5 +1,5 @@
 
-import {  Request, Response, Server } from 'restify'; 
+import { Request, Response, Server } from 'restify';
 import { NextFunction } from 'express';
 
 const get = (req: Request, res: Response, next: NextFunction) => {

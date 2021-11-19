@@ -1,7 +1,7 @@
 
-import {createStore} from '../src/events.store';
-import {IRedisStore, RedisStore} from '../src/redis.store';
-import {expect} from 'chai';
+import { createStore } from '../src/events.store';
+import { IRedisStore, RedisStore } from '../src/redis.store';
+import { expect } from 'chai';
 import td from 'testdouble';
 
 describe('events.store', () => {
@@ -25,7 +25,7 @@ describe('events.store', () => {
       td.when(itemsStore.addItem('channel', expectedHeader, td.callback))
         .thenCallback(null);
 
-      subject.addEvent('channel', {from: 'me', type: 'kind', data: {}}, (err, event) => {
+      subject.addEvent('channel', { from: 'me', type: 'kind', data: {} }, (err, event) => {
         expect(err).to.be.null;
         actualEvent = event;
         done();
@@ -54,7 +54,7 @@ describe('events.store', () => {
       td.when(itemsStore.loadItems('channel', 5, 100, td.callback))
         .thenCallback(null, [1, 2, 3]);
 
-      subject.loadEvents('channel', {clientId: 'client', after: 5, limit: 100, afterExplicitlySet: true}, (err, events) => {
+      subject.loadEvents('channel', { clientId: 'client', after: 5, limit: 100, afterExplicitlySet: true }, (err, events) => {
         expect(err).to.be.null;
         expect(events).to.eql([1, 2, 3]);
         td.verify(itemsStore.setIndex('last-fetched:client:channel', 5, td.matchers.isA(Function)));
@@ -72,7 +72,7 @@ describe('events.store', () => {
       td.when(itemsStore.loadItems('channel', 5, 99, td.callback))
         .thenCallback(null, [1, 2, 3]);
 
-      subject.loadEvents('channel', {clientId: 'client', limit: 99}, (err, events) => {
+      subject.loadEvents('channel', { clientId: 'client', limit: 99 }, (err, events) => {
         expect(err).to.be.null;
         expect(events).to.eql([1, 2, 3]);
         done();

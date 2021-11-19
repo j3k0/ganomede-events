@@ -1,9 +1,9 @@
-import {Request, Response, Server, ServerOptions} from 'restify';
+import { Request, Response, Server, ServerOptions } from 'restify';
 import restify from 'restify';
-import {logger} from './logger';
-import {config} from '../config';
-import {sendAuditStats} from './send-audit-stats';
-import { NextFunction } from 'express'; 
+import { logger } from './logger';
+import { config } from '../config';
+import { sendAuditStats } from './send-audit-stats';
+import { NextFunction } from 'express';
 
 const matchSecret = (obj: Request, prop: string) => {
   const has = obj && (obj as any)[prop] && Object.hasOwnProperty.call((obj as any)[prop], 'secret');
@@ -33,14 +33,14 @@ const filteredLogger = (errorsOnly: boolean, logger: any) => (req: Request, res:
 };
 
 export const createServer = () => {
-  logger.info({env: process.env}, 'environment');
+  logger.info({ env: process.env }, 'environment');
   const server: Server = restify.createServer({
     handleUncaughtExceptions: true,
     log: logger
-  } as ServerOptions );
+  } as ServerOptions);
 
   const requestLogger = filteredLogger(false, (req: Request) =>
-    req.log.info({req_id: req.id()}, `${req.method} ${req.url}`));
+    req.log.info({ req_id: req.id() }, `${req.method} ${req.url}`));
   server.use(requestLogger);
 
   server.use(restify.queryParser());
@@ -48,11 +48,11 @@ export const createServer = () => {
 
   // Audit requests
   server.on('after', filteredLogger(process.env.NODE_ENV === 'production',
-    restify.auditLogger({log: logger/*, body: true*/})));
+    restify.auditLogger({ log: logger/*, body: true*/ })));
 
   // Automatically add a request-id to the response
-  function setRequestId (req: Request, res: Response, next: NextFunction) {
-    req.log = req.log.child({req_id: req.id()});
+  function setRequestId(req: Request, res: Response, next: NextFunction) {
+    req.log = req.log.child({ req_id: req.id() });
     res.setHeader('X-Request-Id', req.id());
     return next();
   }

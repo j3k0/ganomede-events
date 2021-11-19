@@ -1,9 +1,9 @@
 
-import {expect} from 'chai';
+import { expect } from 'chai';
 import supertest from 'supertest';
-import {createServer} from '../src/server';
-import {createAbout} from '../src/about.router';
-import {config} from '../config';
+import { createServer } from '../src/server';
+import { createAbout } from '../src/about.router';
+import { config } from '../config';
 import pkg from '../package.json';
 
 const about = createAbout;

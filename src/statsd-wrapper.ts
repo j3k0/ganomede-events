@@ -1,16 +1,16 @@
-import {logger} from './logger';
-import {StatsD} from 'node-statsd';
+import { logger } from './logger';
+import { StatsD } from 'node-statsd';
 import Logger from 'bunyan';
 
 export const dummyClient = () => {
   return {
-    increment: function () {},
-    timing: function () {},
-    decrement: function () {},
-    histogram: function () {},
-    gauge: function () {},
-    set: function () {},
-    unique: function () {}
+    increment: function () { },
+    timing: function () { },
+    decrement: function () { },
+    histogram: function () { },
+    gauge: function () { },
+    set: function () { },
+    unique: function () { }
   };
 };
 

@@ -1,5 +1,3 @@
-'use strict';
-
 // restify middleware that loads and outputs events
 // from a given channel
 //
@@ -12,22 +10,25 @@
 //
 // Reponds with a JSON array of events (see README.md)
 //
+import {Request, Response, InvalidContentError, DefiniteHttpError} from 'restify';
+import { NextFunction } from 'express';
+import {parseGetParams}  from './parse-http-params';
+import {pollForEvents} from './poll-for-events';
 
-import restify from 'restify';
-const {parseGetParams} = require('./parse-http-params');
-const pollForEvents = require('./poll-for-events');
+import { Poll } from './poll';
+import {logger} from './logger';
+import bunyan from 'bunyan';
+import { EventsStore } from './events.store';
 
-const createMiddleware = ({
-  poll = require('./poll'),
-  log = require('./logger'),
-  config = require('../config'),
-  store
-}) => (req, res, next) => {
+export const createMiddleware = (
+  poll: Poll, // = createPoll,
+  store: EventsStore,
+  log: bunyan = logger) => (req: Request, res: Response, next: NextFunction) => {
   const params = parseGetParams(req.params);
   if (params instanceof Error)
-    return next(new restify.InvalidContentError(params.message));
+    return next(new InvalidContentError(params.message));
 
-  pollForEvents(store, poll, params, (err, events) => {
+  pollForEvents(store, poll, params, (err: Error|DefiniteHttpError|null, events: []) => {
     if (err) {
       log.error(err);
       return next(err);
@@ -37,5 +38,3 @@ const createMiddleware = ({
     next();
   });
 };
-
-module.exports = {createMiddleware};

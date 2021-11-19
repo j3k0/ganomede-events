@@ -1,31 +1,31 @@
-'use strict';
-
 
 import {expect} from 'chai';
 import supertest from 'supertest';
 import {createServer} from '../src/server';
 import redis from 'redis';
+import { RedisClient } from 'redis';
+import {createEventsRouter} from '../src/events.router';
+import {config} from '../config';
 
 (() => {
   
-  const router = require('../src/events.router');
-  const config = require('../config');
+
 
   describe.skip('events-router', () => {
     const server = createServer(/*{handleUncaughtExceptions: false}*/);
 
-    let redisClient;
+    let redisClient: RedisClient;
 
     before(done => {
-      const retry_strategy = (options) =>
+      const retry_strategy = () =>
         new Error('skip-test');
       redisClient = redis.createClient(config.redis.port, config.redis.host, {retry_strategy});
       redisClient.duplicate = () =>
         redisClient = redis.createClient(config.redis.port, config.redis.host, {retry_strategy});
-      router(config.http.prefix, server, redisClient);
+        createEventsRouter(config.http.prefix, server, redisClient);
       redisClient.info((err) => {
         // Connection to redis failed, skipping integration tests.
-        if (err && err.origin && err.origin.message === 'skip-test')
+        if (err && (err as any).origin && (err as any).origin.message === 'skip-test')
           (this as any).skip();
         else
           server.listen(done);
@@ -37,7 +37,7 @@ import redis from 'redis';
       server.close(done);
     });
 
-    const testGet =  (url, status, params, done, endExpect) => {
+    const testGet =  (url: string, status: number, params: any, done: (r: any) => void, endExpect: (r: any) => void) => {
       return supertest(server)
       .get(url)
       .query({
@@ -56,7 +56,7 @@ import redis from 'redis';
       });
     };
 
-    const testPost = (url, status, params, done, endExpect) => {
+    const testPost = (url: string, status: number, params: any, done: (r: any) => void, endExpect: (r: any) => void) => {
       return supertest(server)
       .post(url)
       .send({
@@ -166,7 +166,7 @@ import redis from 'redis';
     });
 
     it(`@ ${url}: Valid POST followed by GET on ${channel1}`, (done) => {
-      let eventId;
+      let eventId: number;
       testPost(url, okStatus, {
         secret: rightSecret,
         channel: channel1
@@ -213,7 +213,7 @@ import redis from 'redis';
     });
 
     it(`@ ${url}: 2 Valid POSTs followed by GET on ${channel1}`, (done) => {
-      let eventId;
+      let eventId: number;
       testPost(url, okStatus, {
         secret: rightSecret,
         channel: channel1
@@ -253,7 +253,7 @@ import redis from 'redis';
     });
 
     it(`@ ${url}: Valid POST followed by GET on ${channel1} after added event`, (done) => {
-      let eventId;
+      let eventId: number;
       testPost(url, okStatus, {
         secret: rightSecret,
         channel: channel1
@@ -275,7 +275,7 @@ import redis from 'redis';
     });
 
     it(`@ ${url}: 2 Valid POSTs followed by GET on ${channel1} after first added event`, (done) => {
-      let eventId;
+      let eventId: number;
       testPost(url, okStatus, {
         secret: rightSecret,
         channel: channel1
@@ -313,7 +313,7 @@ import redis from 'redis';
     });
 
     it(`@ ${url}: 3 Valid POSTs followed by GET on ${channel1} after first added event`, (done) => {
-      let eventId;
+      let eventId: number;
       testPost(url, okStatus, {
         secret: rightSecret,
         channel: channel1
@@ -363,7 +363,7 @@ import redis from 'redis';
     });
 
     it(`@ ${url}: Valid GET and then POST before timeout on ${channel1}`, (done) => {
-      let eventId;
+      let eventId: number;
       testPost(url, okStatus, {
         secret: rightSecret,
         channel: channel1

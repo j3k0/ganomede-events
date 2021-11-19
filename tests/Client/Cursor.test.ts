@@ -1,4 +1,3 @@
-'use strict';
 
 import {Cursor} from '../../src/client/Cursor';
 import {expect} from 'chai';
@@ -41,14 +40,14 @@ describe('Cursor', () => {
     });
 
     it('advancing with empty or malformed array returns self', () => {
-      expect(start.advance([])).to.equal(start);
-      expect(start.advance([{}])).to.equal(start);
+      expect(start.advance([] as any)).to.equal(start);
+      expect(start.advance([{}] as any)).to.equal(start);
     });
 
     it('advancing with non-array returns self', () => {
-      expect(start.advance(undefined)).to.equal(start);
-      expect(start.advance(null)).to.equal(start);
-      expect(start.advance(new Error())).to.equal(start);
+      expect(start.advance(undefined as any)).to.equal(start);
+      expect(start.advance(null as any)).to.equal(start);
+      expect(start.advance(new Error() as any)).to.equal(start);
     });
   });
 

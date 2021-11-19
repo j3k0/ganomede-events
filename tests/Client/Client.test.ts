@@ -1,11 +1,10 @@
-'use strict';
-
 import {expect} from 'chai';
 import td from 'testdouble';
 import {config} from '../../config';
+import { Cursor } from '../../src/client/Cursor';
 
 const url = require('url');
-const Client = require('../../src/client/Client');
+import {Client} from '../../src/client/Client';
 
 describe('Client', () => {
   describe('new Client()', () => {
@@ -32,7 +31,7 @@ describe('Client', () => {
       let nCalls = 0;
 
       td.when(client.client.getEvents(td.matchers.isA(Object), td.matchers.isA(Function)))
-        .thenDo((cursor, cb) => {
+        .thenDo((cursor: Cursor, cb: (...args: any[]) => void) => {
           ++nCalls;
           setImmediate(cb, null, [
             {from: 'service', type: 'type'},
@@ -40,7 +39,7 @@ describe('Client', () => {
           ]);
         });
 
-      const handler = event => {
+      const handler = () => {
         ++nEmits;
         if (nEmits === 2) {
           // first we receive 2 messages from one channel
@@ -69,7 +68,7 @@ describe('Client', () => {
       let nCalls = 0;
 
       td.when(client.client.getEvents(td.matchers.isA(Object), td.matchers.isA(Function)))
-        .thenDo((cursor, cb) => {
+        .thenDo((cursor: Cursor, cb: (...args: any[]) => void) => {
           ++nCalls;
           setImmediate(cb, null, [
             expectedEvent,
@@ -99,11 +98,11 @@ describe('Client', () => {
 
     it('subscribing multiple times does not trigger multiple simultaneous requests', (done) => {
       const client = createClient();
-      const calls = [];
+      const calls: any[] = [];
       let nEmits = 0;
 
       td.when(client.client.getEvents(td.matchers.isA(Object), td.matchers.isA(Function)))
-        .thenDo((cursor, cb) => {
+        .thenDo((cursor: Cursor, cb: (...args: any[]) => void) => {
           calls.push(cursor.channel as never);
           setImmediate(cb, null, [
             {from: 'ch', type: 'type'},
@@ -111,8 +110,8 @@ describe('Client', () => {
           ]);
         });
 
-      const handler = (channel) => {
-        const myself = (event) => {
+      const handler = (channel: string) => {
+        const myself = () => {
           ++nEmits;
           client.removeListener(channel, myself);
         };
@@ -139,7 +138,7 @@ describe('Client', () => {
 
       // Assume we have no events with this request, but want to detach listener.
       td.when(client.client.getEvents(td.matchers.isA(Object), td.matchers.isA(Function)))
-        .thenDo((cursor, cb) => setImmediate(cb, null, []));
+        .thenDo((cursor: Cursor, cb: (...args: any[]) => void) => setImmediate(cb, null, []));
 
       // These will never trigger.
       client.on('ch', handler);
@@ -177,7 +176,7 @@ describe('Client', () => {
       td.when(client.client.sendEvent('someplace', {from: 'me', type: 'x'}, td.callback))
         .thenCallback(null, reply);
 
-      client.send('someplace', {from: 'me', type: 'x'}, (err, header) => {
+      client.send('someplace', {from: 'me', type: 'x'}, (err: Error, header: any) => {
         expect(err).to.be.null;
         expect(header).to.eql(reply);
         done();

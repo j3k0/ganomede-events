@@ -1,8 +1,7 @@
-'use strict';
 
 import supertest from 'supertest';
 import {createServer} from '../src/server';
-import {createPingRounter} from '../src/ping.router';
+import {createPingRouter} from '../src/ping.router';
 import {config} from '../config';
 
 describe('ping-router', () => {
@@ -11,7 +10,7 @@ describe('ping-router', () => {
   const url = `${config.http.prefix}/ping/something`;
 
   before(done => {
-    createPingRounter(config.http.prefix, server);
+    createPingRouter(config.http.prefix, server);
     server.listen(done);
   });
 

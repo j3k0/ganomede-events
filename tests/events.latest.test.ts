@@ -6,14 +6,14 @@ import {createServer} from '../src/server';
 import {config} from '../config';
 import {latest} from '../src/latest.router';
 import {parseLatestGetParams} from '../src/parse-http-params';
-import redis from 'redis';
+import redis, { RedisClient } from 'redis';
 import td from 'testdouble';
 
 const url = `${config.http.prefix}/latest`;
 
 const NON_EMPTY_CHANNEL = 'non-empty-channel';
 
-let redisClient;
+let redisClient: RedisClient;
 
 describe('Testing ParseLatestGetParams', () => {
   it('Empty params to be null', () => {
@@ -38,7 +38,7 @@ describe('Testing ParseLatestGetParams', () => {
   });
 
   it('channel must be non-empty string', () => {
-    const t = (input) => {
+    const t = (input: any) => {
       const actual = parseLatestGetParams(input);
       expect(actual).to.be.instanceof(Error);
       expect((actual as Error).message).to.equal('Invalid Channel');
@@ -66,7 +66,6 @@ describe('events.latest.get', () => {
 
     redisClient.info((err) => {
       // Connection to redis failed, skipping integration tests.
-      // console.log("XXX");
       if (err && err.origin && err.origin.message === 'skip-test')
         (this as any).skip();
       else
@@ -79,7 +78,7 @@ describe('events.latest.get', () => {
         ? this.redis.mget(keys, callback)
 
     */
-    redisClient = td.object(['zrange', 'mget']);
+    redisClient = td.object(['zrange', 'mget']) as RedisClient;
     latest(config.http.prefix, server, redisClient);
     server.listen(done);
   });

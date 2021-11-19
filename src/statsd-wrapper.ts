@@ -1,8 +1,8 @@
-'use strict';
+import {logger} from './logger';
+import {StatsD} from 'node-statsd';
+import Logger from 'bunyan';
 
-const logMod = require('./logger');
-const StatsD = require('node-statsd');
-const dummyClient = () => {
+export const dummyClient = () => {
   return {
     increment: function () {},
     timing: function () {},
@@ -18,8 +18,8 @@ const requiredEnv = ['STATSD_HOST', 'STATSD_PORT', 'STATSD_PREFIX'];
 
 const missingEnv = () => requiredEnv.filter((e) => !process.env[e])[0];
 
-const createClient = function (logArg) {
-  const log = logArg || logMod.child({
+export const createClient = function (logArg: Logger | undefined) {
+  const log = logArg || logger.child({
     module: 'statsd'
   });
   if (missingEnv()) {
@@ -27,17 +27,12 @@ const createClient = function (logArg) {
     return dummyClient();
   }
   const client = new StatsD({
-    host: process.env.STATSD_HOST,
-    port: process.env.STATSD_PORT,
-    prefix: process.env.STATSD_PREFIX
+    host: process.env.STATSD_HOST as string,
+    port: parseInt(process.env.STATSD_PORT!),
+    prefix: process.env.STATSD_PREFIX as string
   });
   client.socket.on('error', function (error) {
     return log.error('error in socket', error);
   });
   return client;
-};
-
-module.exports = {
-  createClient: createClient,
-  dummyClient: dummyClient
 };

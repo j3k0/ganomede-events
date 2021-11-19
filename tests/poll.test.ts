@@ -1,7 +1,8 @@
-'use strict';
 
-const {createPoll} = require('../src/poll');
+import {Poll} from '../src/poll';
 import td from 'testdouble';
+import { PubSub } from '../src/redis.pubsub';
+import Logger from 'bunyan';
 const {verify, when} = td;
 const {isA} = td.matchers;
 const calledOnce = {times: 1, ignoreExtraArgs: true};
@@ -12,26 +13,26 @@ describe('poll', () => {
   const MESSAGE = 'message';
   const POLL_TIMEOUT = 321;
   const TIMEOUT_ID = 1;
-  let callback;
-  let log;
-  let poll;
-  let pubsub;
-  let setTimeout;
-  let clearTimeout;
+  let callback: (e?: Error | null, d?: any) => void;
+  let log: Logger;
+  let poll: Poll;
+  let pubsub: PubSub;
+  let setTimeout: typeof global.setTimeout;
+  let clearTimeout: typeof global.clearTimeout;
 
   beforeEach(() => {
-    callback = td.function('callback');
-    pubsub = td.object(['subscribe', 'publish', 'unsubscribe']);
-    setTimeout = td.function('setTimeout');
-    clearTimeout = td.function('clearTimeout');
-    log = td.object(['error']);
-    poll = createPoll({
+    callback = td.function('callback') as ((e?: Error | null, d?: any) => void);
+    pubsub = td.object(['subscribe', 'publish', 'unsubscribe']) as PubSub;
+    setTimeout = td.function('setTimeout') as (typeof global.setTimeout);
+    clearTimeout = td.function('clearTimeout') as (typeof global.clearTimeout);
+    log = td.object(['error']) as Logger;
+    poll = new Poll(
       pubsub,
       log,
+      POLL_TIMEOUT,
       setTimeout,
-      clearTimeout,
-      pollTimeout: POLL_TIMEOUT
-    });
+      clearTimeout
+    );
   });
 
   describe('.emit', () => {
@@ -56,7 +57,7 @@ describe('poll', () => {
 
     it('reports a null message on timeout', (done) => {
       when(setTimeout(isA(Function), isA(Number)))
-        .thenDo((cb) => {
+        .thenDo((cb: () => void) => {
           setImmediate(cb);
           return TIMEOUT_ID;
         });
@@ -73,7 +74,7 @@ describe('poll', () => {
 
     it('reports channel messages', (done) => {
       when(pubsub.subscribe(CHANNEL, isA(Function), isA(Function)))
-        .thenDo((_, cb) => {
+        .thenDo((_: any, cb: (d: string) => void) => {
           setImmediate(() => cb(MESSAGE));
         });
       when(setTimeout(isA(Function), isA(Number)))

@@ -1,8 +1,10 @@
-'use strict';
 
-const util = require('util');
-const restify = require('restify');
-const logger = require('./logger');
+import util from 'util';
+import restify, { DefiniteHttpError } from 'restify';
+import {logger} from './logger';
+import { NextFunction } from 'express';
+
+
 
 // The way to distinguish our app's logic-level errors from others.
 // (Like `socket hang up` vs `user already exists`.)
@@ -58,12 +60,20 @@ const severity = {
   debug: 'debug',  // (20): Anything else, i.e. too verbose to be included in "info" level.
   trace: 'trace'   // (10): Logging from external libraries used by your app or very detailed application logging.
 };
+const log : {[key: string]: any } = {};
+
+log[severity.fatal] = logger.fatal;
+log[severity.error] = logger.error;
+log[severity.warn] = logger.warn;
+log[severity.info] = logger.info;
+log[severity.debug] = logger.debug;
+log[severity.trace] = logger.trace;
 
 class GanomedeError extends Error {
 
   statusCode: number = 0;
-  severity: any;
-  constructor (...messageArgs) {
+  severity: string;
+  constructor (...messageArgs: any) {
     super();
     this.name = this.constructor.name;
     this.severity = severity.error;
@@ -91,7 +101,7 @@ class GanomedeError extends Error {
 //   //   "message": "Invalid or missing User ID" }
 export class RequestValidationError extends GanomedeError {
 
-  constructor (name, ...messageArgs) {
+  constructor (name: string, ...messageArgs: any) {
     super(...messageArgs);
     this.name = name;
     this.statusCode = 400;
@@ -115,7 +125,7 @@ export class InvalidCredentialsError extends GanomedeError {
   }
 }
 
-const toRestError = (error) => {
+const toRestError = (error: GanomedeError) => {
   if (!error.statusCode)
     throw new Error(`Please define "statusCode" prop for ${error.constructor.name}`);
 
@@ -133,12 +143,12 @@ const captureStack = () => {
 };
 
 // Kept forgetting `next` part, so let's change this to (next, err).
-const sendHttpError = (next, err) => {
+export const sendHttpError = (next: NextFunction, err: Error|DefiniteHttpError) => {
   // When we have an instance of GanomedeError, it means stuff that's defined here, in this file.
   // So those have `statusCode` and convertable to rest errors.
   // In case they don't, we die (because programmers error ("upcast" it) not runtime's).
   if (err instanceof GanomedeError) {
-    logger[err.severity](err);
+    log[err.severity](err);
     return next(toRestError(err));
   }
 

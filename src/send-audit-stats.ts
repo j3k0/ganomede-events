@@ -1,22 +1,23 @@
 // A restify server.on('after', ...) handler
 //
 // Will send requests statistics to a statsd server
+import { Request, Response } from 'restify'; 
+import { NextFunction } from 'express';
+import {createClient} from './statsd-wrapper';
 
-'use strict';
+const stats = createClient(undefined);
 
-const stats = require('./statsd-wrapper').createClient();
+const cleanupStatsKey = (key: string) => key.replace(/[-.]/g, '_').toLowerCase();
 
-const cleanupStatsKey = (key) => key.replace(/[-.]/g, '_').toLowerCase();
-
-const sendAuditStats = (req, res, next) => {
+export const sendAuditStats = (req: Request, res: Response, next: NextFunction) => {
 
   // send number of calls to this route (with response status code) with 10% sampling
-  const routeName = req.route ? 'route.' + req.route.name : 'invalid_route';
+  const routeName = (req as any).route ? 'route.' + (req as any).route.name : 'invalid_route';
   stats.increment(routeName + '.status.' + res.statusCode, 1, 0.1);
 
   // send error statuses (with response status code) with 10% sampling
-  if (res._body && res._body.restCode) {
-    stats.increment(routeName + '.code.' + cleanupStatsKey(res._body.restCode), 1, 0.1);
+  if ((req as any)._body && (req as any)._body.restCode) {
+    stats.increment(routeName + '.code.' + cleanupStatsKey((req as any)._body.restCode), 1, 0.1);
   }
 
   // send timings with 1% sampling
@@ -30,5 +31,3 @@ const sendAuditStats = (req, res, next) => {
     next();
   }
 };
-
-module.exports = sendAuditStats;

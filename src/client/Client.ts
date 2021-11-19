@@ -1,11 +1,10 @@
-'use strict';
 
-const {EventEmitter} = require('events');
+import {EventEmitter} from 'events';
 import lodash from 'lodash';
 import {Cursor} from './Cursor';
 import {EventsClient} from './EventsClient';
 import {config} from '../../config';
-import setImmediate from 'async/setImmediate';
+import {setImmediate} from 'async';
 
 const noop = () => {};
 
@@ -19,8 +18,13 @@ const ignoreChannels = [
   'cycle'           // ({finished, next}, channel) After completing every HTTP request for that channel.
 ];
 
-class Client extends EventEmitter {
-  constructor (clientId, {
+export class Client extends EventEmitter {
+
+  client:EventsClient;
+  polls: any;
+  cursors: any;
+
+  constructor (clientId: string, {
     secret = '', // [required]
     agent = '',  // [optional] http/https agent to use https://nodejs.org/api/http.html#http_class_http_agent
     protocol = 'http',
@@ -50,19 +54,19 @@ class Client extends EventEmitter {
     this.cursors = {}; // channel -> cursor
   }
 
-  checkForDrain () {
+  checkForDrain (): void {
     if (lodash.values(this.polls).every(status => !status))
       this.emit('drain');
   }
 
-  startPolling (channel) {
+  startPolling (channel: string): void {
     if (this.polls[channel])
       return;
 
     this.polls[channel] = true;
     const cursor = this.cursors[channel] = this.cursors[channel] || new Cursor(channel);
 
-    this.client.getEvents(cursor, (err, events) => {
+    this.client.getEvents(cursor, (err: Error, events: []) => {
       if (err)
         this.emit('error', err, channel);
       else
@@ -86,16 +90,17 @@ class Client extends EventEmitter {
     });
   }
 
-  on (channel, handler) {
+  on (channel: string, handler: (...args: any[]) => void) : any{
     // TODO
     // perhaps print warnings of some kind
     if (!ignoreChannels.includes(channel))
       this.startPolling(channel);
 
     super.on(channel, handler);
+    return this;
   }
 
-  send (channel, eventArg, callback = noop) {
+  send (channel: string, eventArg: {from: string, type: string, data?: any}, callback: ((e: Error, h: any) => void) = noop) {
     const {from, type, data} = eventArg;
     const hasData = eventArg.hasOwnProperty('data');
 
@@ -118,5 +123,4 @@ class Client extends EventEmitter {
     this.client.sendEvent(channel, event, callback);
   }
 }
-
-module.exports = Client;
+ 

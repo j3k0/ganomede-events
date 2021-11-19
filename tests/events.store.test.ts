@@ -1,18 +1,17 @@
-'use strict';
 
 import {createStore} from '../src/events.store';
-import {IRedisStore} from '../src/redis.store';
+import {IRedisStore, RedisStore} from '../src/redis.store';
 import {expect} from 'chai';
 import td from 'testdouble';
 
 describe('events.store', () => {
   describe('#addEvent()', () => {
     const now = Date.now();
-    let actualEvent;
+    let actualEvent: any;
 
     before((done) => {
       const itemsStore = td.object<IRedisStore>(null as any);// (['nextIndex', 'addItem']);
-      const subject = createStore({itemsStore});
+      const subject = createStore(itemsStore as RedisStore);
       const expectedHeader = td.matchers.contains({
         id: 5,
         timestamp: now
@@ -50,7 +49,7 @@ describe('events.store', () => {
   describe('#loadEvents()', () => {
     it('updates last fetched index and loads items in case after is explicit', (done) => {
       const itemsStore = td.object<IRedisStore>(null as any);// td.object(['setIndex', 'loadItems']);
-      const subject = createStore({itemsStore});
+      const subject = createStore(itemsStore as RedisStore);
 
       td.when(itemsStore.loadItems('channel', 5, 100, td.callback))
         .thenCallback(null, [1, 2, 3]);
@@ -65,7 +64,7 @@ describe('events.store', () => {
 
     it('asks itemsStore for missing `after` with `clientId`', (done) => {
       const itemsStore = td.object<IRedisStore>(null as any);// td.object(['getIndex', 'loadItems']);
-      const subject = createStore({itemsStore});
+      const subject = createStore(itemsStore as RedisStore);
 
       td.when(itemsStore.getIndex('last-fetched:client:channel', td.callback))
         .thenCallback(null, 5);

@@ -1,13 +1,13 @@
-'use strict';
 
 import async from 'async';
-const utils = require('./utils');
+import {addOne} from './utils';
+import { RedisClient } from 'redis';
 
 // Constants
 const INDICES = 'indices';
 const KEYS = 'keys';
 
-const key = (group, tag) => `${group}:${tag}`;
+const key = (group: string, tag: string) => `${group}:${tag}`;
 
 
 export interface IRedisStore{
@@ -18,9 +18,9 @@ export interface IRedisStore{
   loadItems (channel: string, start: number, limit: number, callback: (e: Error|null|undefined, res?: any) => void): void;
 }
 
-class RedisStore implements IRedisStore{
-  redis: any;
-  constructor (redisClient) {
+export class RedisStore implements IRedisStore{
+  redis: RedisClient;
+  constructor (redisClient: RedisClient) {
     this.redis = redisClient;
   }
 
@@ -32,11 +32,11 @@ class RedisStore implements IRedisStore{
     });
   }
 
-  setIndex (key: string, idx: number, callback: (e: Error|null, res?: any) => void): void{
+  setIndex (key: string, idx: number|undefined, callback: (e: Error|null, res?: any) => void): void{
     this.redis.set(key, String(idx), (err) => callback(err));
   }
 
-  nextIndex (channel: string, callback: ()=>void) : void{
+  nextIndex (channel: string, callback: (e: Error|null, event?: any) => void) : void{
     this.redis.incr(`${INDICES}:${channel}`, callback);
   }
 
@@ -58,12 +58,8 @@ class RedisStore implements IRedisStore{
       });
   }
 
-  loadItems (channel: string, start: number, limit: number, callback: (e: Error|null|undefined, res?: any) => void): void{
-    const retrieveKeys = (callback) =>
-    this.redis.zrangebyscore(key(channel, KEYS),
-      utils.addOne(start), '+inf', 'LIMIT', 0, limit, callback);
-
-    const pullAllItems = (keys, callback) => {
+  private _loadItems  (callback: (e: Error|null|undefined, res?: any) => void, retrieveKeys: (cb: any) => any): void{
+    const pullAllItems = (keys: string[], callback: (e: Error|null, results: string[]) => void) => {
       return keys.length > 0
         ? this.redis.mget(keys, callback)
         : callback(null, []);
@@ -80,30 +76,20 @@ class RedisStore implements IRedisStore{
     });
   }
 
-  loadLatestEvents (channel, limit, callback) {
-    // this.redis.zrange(key(channel, KEYS), -limit, -1, (err, results) => {
-    //   callback(err, results);
-    // });
+  loadItems (channel: string, start: number|undefined, limit: number, callback: (e: Error|null|undefined, res?: any) => void): void{
+    const retrieveKeys = (callback: (e: Error|null|undefined, res?: any) => void) =>
+    this.redis.zrangebyscore(key(channel, KEYS),
+      addOne(start), '+inf', 'LIMIT', 0, limit, callback);
 
-    const retrieveKeys = (callback) =>
+    this._loadItems(callback, retrieveKeys);
+  }
+
+  loadLatestEvents (channel: string, limit: number, callback: (e: Error|null|undefined, res?: any) => void) {
+    const retrieveKeys = (callback: (e: Error|null|undefined, res?: any) => void) =>
     this.redis.zrange(key(channel, KEYS), -limit, -1, callback);
 
-    const pullAllItems = (keys, callback) => {
-      return keys.length > 0
-        ? this.redis.mget(keys, callback)
-        : callback(null, []);
-    };
-
-    async.waterfall([
-      retrieveKeys,
-      pullAllItems
-    ], (err, items: any) => {
-      try {
-        items = items.map(JSON.parse);
-      } catch (e) {}
-      callback(err, items);
-    });
+    this._loadItems(callback, retrieveKeys);
   }
 }
 
-export const createStore = ({redisClient}) => new RedisStore(redisClient); 
+export const createStore = (redisClient: RedisClient) => new RedisStore(redisClient); 

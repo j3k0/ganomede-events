@@ -1,7 +1,6 @@
-'use strict';
 
-const util = require('util');
-const lodash = require('lodash');
+import util from 'util';
+import lodash from 'lodash';
 
 export class Cursor {
   channel: string = '';
@@ -23,7 +22,7 @@ export class Cursor {
     this.limit = limit;
   }
 
-  advance (events) {
+  advance (events: {id: any}[]) {
     const newestEvent = Array.isArray(events) && (events.length > 0)
       ? lodash.maxBy(events, event => event.id)
       : undefined;
@@ -34,7 +33,7 @@ export class Cursor {
   }
 
   toQuery () {
-    const qs = {channel: this.channel};
+    const qs: {channel: string, after?: number, limit?: string} = {channel: this.channel};
 
     if (this.after !== null)
       qs['after'] = this.after;

@@ -1,17 +1,16 @@
-'use strict';
 
 import async from 'async';
-const cluster = require('cluster');
-const redis = require('redis');
-const restify = require('restify');
-const curtain = require('curtain-down');
-const config = require('../config');
-const about = require('./about.router');
-const events = require('./events.router');
-const latest = require('./latest.router');
-const ping = require('./ping.router');
-const createServer = require('./server');
-const logger = require('./logger');
+import cluster from 'cluster';
+import redis, { RedisClient } from 'redis';
+import restify, { Server } from 'restify';
+import curtain from 'curtain-down';
+import {config} from '../config';
+import {createAbout} from './about.router';
+import {createEventsRouter} from './events.router';
+import {latest} from './latest.router';
+import {createPingRouter} from './ping.router';
+import {createServer} from './server';
+import {logger} from './logger';
 
 const master = () => {
   let running = true;
@@ -44,15 +43,15 @@ const master = () => {
 };
 
 const child = () => {
-  const server = createServer();
+  const server: Server = createServer();
 
   // Clients
-  const redisClient = redis.createClient(config.redis.port, config.redis.host);
+  const redisClient: redis.RedisClient = redis.createClient(config.redis.port, config.redis.host);
 
-  const eventsRouter = events(config.http.prefix, server, redisClient);
-  const latestRouter = latest(config.http.prefix, server, redisClient);
-  about(config.http.prefix, server);
-  ping(config.http.prefix, server);
+  const eventsRouter = createEventsRouter(config.http.prefix, server, redisClient);
+  latest(config.http.prefix, server, redisClient);
+  createAbout(config.http.prefix, server);
+  createPingRouter(config.http.prefix, server);
 
   curtain.on(() => {
     logger.info('worker stopping…');
@@ -61,8 +60,7 @@ const child = () => {
       (cb) => redisClient.quit(cb),
       (cb) => server.close(cb),
       (cb) => eventsRouter.close(cb),
-      (cb) => latestRouter.close(cb),
-    ], () => cluster.worker.disconnect());
+    ], () => cluster.worker?.disconnect());
   });
 
   server.listen(config.http.port, config.http.host, () => {
@@ -88,7 +86,7 @@ const child = () => {
       // Let the master know we're dead.  This will trigger a
       // 'disconnect' in the cluster master, and then it will fork
       // a new worker.
-      cluster.worker.disconnect();
+      cluster.worker?.disconnect();
 
       const message = err.message || 'unexpected error';
       res.send(new restify.InternalError(message));

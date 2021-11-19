@@ -1,23 +1,26 @@
 // unit tests for events.middleware.get
 
-'use strict';
-
 import td from 'testdouble';
-import restify from 'restify';
+import {Request, Response, InternalServerError, InvalidContentError} from 'restify';
+import { createMiddleware } from '../src/events.middleware.get';
 import {parseGetParams} from '../src/parse-http-params';
-import {expect} from 'chai'; 
+import {expect} from 'chai';  
+import { EventsStore } from '../src/events.store';
+import { Poll } from '../src/poll';
+import { NextFunction } from 'express';
+import Logger from 'bunyan';
 const {anything, isA} = td.matchers;
 const {verify, when} = td;
 const calledOnce = {times: 1, ignoreExtraArgs: true};
 
 describe('events.middleware.get', () => {
-  let poll;
-  let store;
-  let middleware;
-  let log;
-  let req;
-  let res;
-  let next;
+  let poll: Poll;
+  let store: EventsStore;
+  let middleware: any;
+  let log: Logger;
+  let req: Request;
+  let res: Response;
+  let next: NextFunction;
 
   const FAILING_LOAD_CHANNEL = 'failing-load-channel';
   const EMPTY_CHANNEL = 'empty-channel';
@@ -27,29 +30,29 @@ describe('events.middleware.get', () => {
   const TRIGGER_EVENT = {id: 1};
   const FAILING_POLL_CHANNEL = 'failing-poll-channel';
 
-  const testChannels = {};
+  const testChannels: {[key: string]: () => void} = {};
 
   // NON_EMPTY_CHANNEL:
   //  - has 1 event
   testChannels[NON_EMPTY_CHANNEL] = () => {
-    when(store.loadEvents(NON_EMPTY_CHANNEL, anything()))
+    when(store.loadEvents(NON_EMPTY_CHANNEL, anything(), td.callback))
       .thenCallback(null, [NON_EMPTY_EVENT]);
   };
 
   // FAILING_LOAD_CHANNEL:
   //  - loading fails with a InternalServerError
   testChannels[FAILING_LOAD_CHANNEL] = () => {
-    when(store.loadEvents(FAILING_LOAD_CHANNEL, anything()))
-      .thenCallback(new restify.InternalServerError());
+    when(store.loadEvents(FAILING_LOAD_CHANNEL, anything(), td.callback))
+      .thenCallback(new InternalServerError());
   };
 
   // FAILING_POLL_CHANNEL:
   //  - has no events
   //  - polling will fail
   testChannels[FAILING_POLL_CHANNEL] = () => {
-    when(store.loadEvents(FAILING_POLL_CHANNEL, anything()))
+    when(store.loadEvents(FAILING_POLL_CHANNEL, anything(), td.callback))
       .thenCallback(null, []);
-    when(poll.listen(FAILING_POLL_CHANNEL))
+    when(poll.listen(FAILING_POLL_CHANNEL, td.callback))
       .thenCallback(new Error('poll.listen failed'));
   };
 
@@ -57,9 +60,9 @@ describe('events.middleware.get', () => {
   //  - has no events
   //  - polling will timeout
   testChannels[EMPTY_CHANNEL] = () => {
-    when(store.loadEvents(EMPTY_CHANNEL, anything()))
+    when(store.loadEvents(EMPTY_CHANNEL, anything(), td.callback))
       .thenCallback(null, []);
-    when(poll.listen(EMPTY_CHANNEL))
+    when(poll.listen(EMPTY_CHANNEL, td.callback))
       .thenCallback(null, null);
   };
 
@@ -69,12 +72,12 @@ describe('events.middleware.get', () => {
   //  - then it will have 1 event
   testChannels[TRIGGER_CHANNEL] = () => {
 
-    when(store.loadEvents(TRIGGER_CHANNEL, anything()))
+    when(store.loadEvents(TRIGGER_CHANNEL, anything(), td.callback))
       .thenCallback(null, []);
 
     when(poll.listen(TRIGGER_CHANNEL, anything()))
-      .thenDo((channel, callback) => {
-        when(store.loadEvents(TRIGGER_CHANNEL, anything()))
+      .thenDo((channel: string, callback: ((e: Error|null, m: string|null|number)  => void)) => {
+        when(store.loadEvents(TRIGGER_CHANNEL, anything(), td.callback))
           .thenCallback(null, [TRIGGER_EVENT]);
         callback(null, TRIGGER_EVENT.id);
       });
@@ -83,22 +86,21 @@ describe('events.middleware.get', () => {
 
   beforeEach(() => {
 
-    store = td.object(['loadEvents']);
-    when(store.loadEvents(anything(), anything()))
+    store = td.object(['loadEvents']) as EventsStore;
+    when(store.loadEvents(anything(), anything(), td.callback))
       .thenCallback(new Error('unexpected store.loadEvents'));
 
-    poll = td.object(['listen']);
+    poll = td.object(['listen']) as Poll;
     when(poll.listen(anything(), anything()))
       .thenCallback(new Error('unexpected poll.listen'));
 
-    log = td.object(['error']);
+    log = td.object(['error']) as Logger;
 
-    middleware = require('../src/events.middleware.get')
-      .createMiddleware({poll, store, log});
+    middleware = createMiddleware(poll, store, log);
 
     const input = validInput();
-    req = input.req;
-    res = input.res;
+    req = input.req as Request;
+    res = input.res as Response;
     next = input.next;
   });
 
@@ -114,10 +116,10 @@ describe('events.middleware.get', () => {
   const validInput = () => ({
     req: validRequest(),
     res: td.object(['json']),
-    next: td.function('next')
+    next: td.function('next') as NextFunction
   });
 
-  const withChannel = (channel) => {
+  const withChannel = (channel: string) => {
     if (testChannels[channel])
       testChannels[channel]();
     req.params.channel = channel;
@@ -125,14 +127,14 @@ describe('events.middleware.get', () => {
   };
 
   it('fails when channel parameter is undefined', () => {
-    withChannel(undefined);
-    verify(next(isA(restify.InvalidContentError)));
+    withChannel(undefined as any);
+    verify(next(isA(InvalidContentError)));
     verify(next(), calledOnce);
   });
 
   it('fails when store.loadEvents fails', () => {
     withChannel(FAILING_LOAD_CHANNEL);
-    verify(next(isA(restify.InternalServerError)));
+    verify(next(isA(InternalServerError)));
     verify(next(), calledOnce);
   });
 
@@ -163,7 +165,7 @@ describe('events.middleware.get', () => {
   it('responds with an InternalServerError when polling fails', () => {
     withChannel(FAILING_POLL_CHANNEL);
     verify(poll.listen(), calledOnce);
-    verify(next(isA(restify.InternalServerError)));
+    verify(next(isA(InternalServerError)));
   });
 
   it('logs polling errors on the console', () => {
@@ -176,9 +178,9 @@ describe('events.middleware.get', () => {
     const channel = 'channel';
 
     it('parses after to be int within [0, MAX_SAFE_INTEGER]', () => {
-      const t = (desiredAfter, expected) => {
+      const t = (desiredAfter: number|undefined|string|{}, expected: number) => {
         const actual = parseGetParams({clientId, channel, after: desiredAfter});
-        expect(actual['after']).to.equal(expected);
+        expect((actual as any)['after']).to.equal(expected);
       };
 
       // acceptable
@@ -194,9 +196,9 @@ describe('events.middleware.get', () => {
     });
 
     it('parses liimt to be int within [1, 100]', () => {
-      const t = (desiredLimit, expected) => {
+      const t = (desiredLimit: number|undefined|string|{}, expected: number) => {
         const actual = parseGetParams({clientId, channel, limit: desiredLimit});
-        expect(actual['limit']).to.equal(expected);
+        expect((actual as any)['limit']).to.equal(expected);
       };
 
       // acceptable
@@ -222,7 +224,7 @@ describe('events.middleware.get', () => {
     });
 
     it('client id must be non-empty string', () => {
-      const t = (input) => {
+      const t = (input: any) => {
         const actual = parseGetParams(input);
         expect(actual).to.be.instanceof(Error);
         expect((actual as Error).message).to.equal('Invalid Client ID');
@@ -236,7 +238,7 @@ describe('events.middleware.get', () => {
     });
 
     it('channel must be non-empty string', () => {
-      const t = (input) => {
+      const t = (input:any) => {
         const actual = parseGetParams(input);
         expect(actual).to.be.instanceof(Error);
         expect((actual as Error).message).to.equal('Invalid Channel');

@@ -1,9 +1,8 @@
-'use strict';
 
-const bunyan = require('bunyan');
+import bunyan  from 'bunyan';
 import {config} from '../config';
 
-module.exports = bunyan.createLogger({
+export const logger = bunyan.createLogger({
   level: config.logLevel,
   name: config.name
 });

@@ -1,4 +1,3 @@
-'use strict';
 
 import {expect} from 'chai';
 import supertest from 'supertest';
@@ -19,7 +18,7 @@ describe('about-router', () => {
 
   after(done => server.close(done));
 
-  const test = (url) => {
+  const test = (url: string) => {
     it(`GET ${url}`, (done) => {
       supertest(server)
         .get(url)

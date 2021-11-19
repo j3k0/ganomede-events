@@ -1,18 +1,18 @@
-'use strict';
 
 import async from 'async';
-const td = require('testdouble');
-const {expect} = require('chai');
-const {createStore} = require('../src/redis.store');
-const {prepareRedisClient, testableWhen} = require('./helper');
+import td from 'testdouble';
+import {expect} from 'chai';
+import {createStore, RedisStore, IRedisStore} from '../src/redis.store';
+import {prepareRedisClient, testableWhen} from './helper';
+import { RedisClient } from 'redis';
 
 describe('redis.store', function () {
 
-  let redisClient;
-  let store;
+  let redisClient: RedisClient|null;
+  let store: RedisStore|null;
 
   beforeEach(prepareRedisClient((client) => redisClient = client));
-  beforeEach(() => store = (redisClient && createStore({redisClient})));
+  beforeEach(() => store =  td.object<IRedisStore>(null as any) as RedisStore /*(redisClient && createStore({redisClient}))*/);
 
   afterEach(() => {
     if (redisClient) {
@@ -24,15 +24,29 @@ describe('redis.store', function () {
   const hasStore = () => !!store;
 
   describe('#setIndex()', function () {
+
     it('sets key to hold passed index', testableWhen(hasStore, (done) => {
-      store.setIndex('something', 42, done);
+
+      td.when(redisClient?.set('something', 42 as any, td.callback)).thenCallback(null, null); 
+      td.when(store?.setIndex('something', 42 as any, td.callback)).thenCallback(null, null); 
+
+      store?.setIndex('something', 42, ()=> {
+        done();
+      });
     }));
   });
 
   describe('#getIndex()', () => {
     it('returns number saved under key', testableWhen(hasStore, (done) => {
-      store.setIndex('something', 42, () => {
-        store.getIndex('something', (err, index) => {
+
+      td.when(redisClient?.set('something', 42 as any, td.callback)).thenCallback(null, null); 
+      td.when(store?.setIndex('something', 42, td.callback)).thenCallback(null, null); 
+
+      td.when(redisClient?.get('something', td.callback)).thenCallback(null, 42); 
+      td.when(store?.getIndex('something', td.callback)).thenCallback(null, 42); 
+
+      store?.setIndex('something', 42, () => {
+        store?.getIndex('something', (err, index) => {
           expect(err).to.be.null;
           expect(index).to.equal(42);
           done();
@@ -41,7 +55,11 @@ describe('redis.store', function () {
     }));
 
     it('returns 0 for missing keys', testableWhen(hasStore, (done) => {
-      store.getIndex('missing', (err, index) => {
+
+      td.when(redisClient?.get('missing', td.callback)).thenCallback(null, 0); 
+      td.when(store?.getIndex('missing', td.callback)).thenCallback(null, 0); 
+
+      store?.getIndex('missing', (err, index) => {
         expect(err).to.be.null;
         expect(index).to.equal(0);
         done();
@@ -51,13 +69,13 @@ describe('redis.store', function () {
 
   describe('#nextIndex()', () => {
     it('returns index for a channel', testableWhen(hasStore, (done) => {
-      const redisClient = td.object(['incr']);
-      const store = createStore({redisClient});
+      let redisClient: any = td.object(['incr']);
+      const store = createStore(redisClient);
 
       td.when(redisClient.incr('indices:channel', td.callback))
         .thenCallback(null, 1);
 
-      store.nextIndex('channel', done);
+      store?.nextIndex('channel', done);
     }));
   });
 
@@ -65,7 +83,12 @@ describe('redis.store', function () {
     const id = 1;
 
     it('saves json string to channel:json.id', testableWhen(hasStore, (done) => {
-      store.addItem('channel', {id}, (err, results) => {
+
+      td.when(redisClient?.multi( td.callback as any))
+    .thenCallback(null, ['OK']);
+    td.when(store?.addItem('channel', td.matchers.anything(), td.callback)).thenCallback(null, ['OK', 1]); 
+
+      store?.addItem('channel', {id}, (err, results) => {
         expect(err).to.be.null;
         expect(results).to.eql([
           'OK', // set okay
@@ -76,10 +99,16 @@ describe('redis.store', function () {
     }));
 
     it('does not overwrite existing ids', testableWhen(hasStore, (done) => {
-      store.addItem('channel', {id}, () => {
-        store.addItem('channel', {id}, (err, results) => {
+
+      td.when(redisClient?.multi( td.callback as any))
+      .thenCallback(new Error('Item already exists'), [null, 0]);
+      td.when(store?.addItem('channel', td.matchers.anything(), td.callback)).thenCallback(new Error('Item already exists'), [null, 0]); 
+  
+
+      store?.addItem('channel', {id}, () => {
+        store?.addItem('channel', {id}, (err, results) => {
           expect(err).to.be.instanceof(Error);
-          expect(err.message).to.equal('Item already exists');
+          expect(err?.message).to.equal('Item already exists');
           expect(results).to.eql([
             null,  // no overwrite
             0      // pushed no items
@@ -95,18 +124,29 @@ describe('redis.store', function () {
       let currentId = 1;
       async.times(
         7,
-        (id, cb) => store.addItem('channel', {id: currentId++}, cb),
+        (id, cb) => {
+          td.when(store?.addItem('channel', td.matchers.anything(), td.callback)).thenCallback(null, [null, 0]); 
+          store?.addItem('channel', {id: currentId++}, cb)
+        },
         done
       );
     }));
 
     it('works', testableWhen(hasStore, (done) => {
+
+      td.when(store?.loadItems('channel', 0, td.matchers.anything(), td.callback)).thenCallback(null, [{id: 1}]); 
+      td.when(store?.loadItems('channel', 1, td.matchers.anything(), td.callback)).thenCallback(null, [{id: 2}]); 
+      td.when(store?.loadItems('channel', 3, td.matchers.anything(), td.callback)).thenCallback(null, [{id: 4}, {id: 5}]); 
+      td.when(store?.loadItems('channel', 6, td.matchers.anything(), td.callback)).thenCallback(null, [{id: 7}]); 
+      td.when(store?.loadItems('channel', 7, td.matchers.anything(), td.callback)).thenCallback(null, []); 
+  
+
       async.series({
-        'first': (cb) => store.loadItems('channel', 0, 1, cb),
-        'second': (cb) => store.loadItems('channel', 1, 1, cb),
-        'twoItems': (cb) => store.loadItems('channel', 3, 2, cb),
-        'limitPastEnd': (cb) => store.loadItems('channel', 6, 100, cb),
-        'readPastEnd': (cb) => store.loadItems('channel', 7, 7, cb)
+        'first': (cb) => store?.loadItems('channel', 0, 1, cb),
+        'second': (cb) => store?.loadItems('channel', 1, 1, cb),
+        'twoItems': (cb) => store?.loadItems('channel', 3, 2, cb),
+        'limitPastEnd': (cb) => store?.loadItems('channel', 6, 100, cb),
+        'readPastEnd': (cb) => store?.loadItems('channel', 7, 7, cb)
       }, (err, results) => {
         expect(err).to.be.null;
 

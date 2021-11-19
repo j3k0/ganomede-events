@@ -1,25 +1,28 @@
+import {Request, Response, Server, ServerOptions} from 'restify';
 import restify from 'restify';
-const logger = require('./logger');
+import {logger} from './logger';
 import {config} from '../config';
+import {sendAuditStats} from './send-audit-stats';
+import { NextFunction } from 'express'; 
 
-const matchSecret = (obj, prop) => {
-  const has = obj && obj[prop] && Object.hasOwnProperty.call(obj[prop], 'secret');
-  const match = has && (typeof obj[prop].secret === 'string')
-    && (obj[prop].secret.length > 0) && (obj[prop].secret === config.secret);
+const matchSecret = (obj: Request, prop: string) => {
+  const has = obj && (obj as any)[prop] && Object.hasOwnProperty.call((obj as any)[prop], 'secret');
+  const match = has && (typeof (obj as any)[prop].secret === 'string')
+    && ((obj as any)[prop].secret.length > 0) && ((obj as any)[prop].secret === config.secret);
 
   if (has)
-    delete obj[prop].secret;
+    delete (obj as any)[prop].secret;
 
   return match;
 };
 
-const shouldLogRequest = (req) =>
-  req.url.indexOf(`${config.http.prefix}/ping/_health_check`) !== 0;
+const shouldLogRequest = (req: Request) =>
+  req.url?.indexOf(`${config.http.prefix}/ping/_health_check`) !== 0;
 
-const shouldLogResponse = (res) =>
+const shouldLogResponse = (res: Response) =>
   (res && res.statusCode >= 500);
 
-const filteredLogger = (errorsOnly, logger) => (req, res, next) => {
+const filteredLogger = (errorsOnly: boolean, logger: any) => (req: Request, res: Response, next: NextFunction) => {
   const logError = errorsOnly && shouldLogResponse(res);
   const logInfo = !errorsOnly && (
     shouldLogRequest(req) || shouldLogResponse(res));
@@ -31,12 +34,12 @@ const filteredLogger = (errorsOnly, logger) => (req, res, next) => {
 
 export const createServer = () => {
   logger.info({env: process.env}, 'environment');
-  const server: restify.Server = restify.createServer({
+  const server: Server = restify.createServer({
     handleUncaughtExceptions: true,
     log: logger
-  } as restify.ServerOptions );
+  } as ServerOptions );
 
-  const requestLogger = filteredLogger(false, (req) =>
+  const requestLogger = filteredLogger(false, (req: Request) =>
     req.log.info({req_id: req.id()}, `${req.method} ${req.url}`));
   server.use(requestLogger);
 
@@ -48,20 +51,19 @@ export const createServer = () => {
     restify.auditLogger({log: logger/*, body: true*/})));
 
   // Automatically add a request-id to the response
-  function setRequestId (req, res, next) {
+  function setRequestId (req: Request, res: Response, next: NextFunction) {
     req.log = req.log.child({req_id: req.id()});
     res.setHeader('X-Request-Id', req.id());
     return next();
   }
   server.use(setRequestId);
 
-  // Send audit statistics
-  const sendAuditStats = require('./send-audit-stats');
+  // Send audit statistics 
   server.on('after', sendAuditStats);
 
   // Init object to dump our stuff into.
-  server.use((req, res, next) => {
-    req['ganomede'] = {
+  server.use((req: Request, res: Response, next: NextFunction) => {
+    (req as any)['ganomede'] = {
       secretMatches: matchSecret(req, 'body') || matchSecret(req, 'query')
     };
 

@@ -1,46 +1,98 @@
-'use strict';
 
 import {zeroIfNaN} from './utils';
+import {logger} from './logger';
+import {config} from '../config';
+import bunyan from 'bunyan'; 
+import { PubSub } from './redis.pubsub';
 
-const createPoll = ({
-  pubsub,
-  log = require('./logger'),
-  pollTimeout = zeroIfNaN(require('../config').pollTimeout),
-  setTimeout = global.setTimeout,
-  clearTimeout = global.clearTimeout
-}) => {
+export class Poll{
 
-  const logError = (err) => err && log.error(err);
+  pubsub: PubSub;
+  log: bunyan;
+  pollTimeout: number;
+  setTimeout: typeof global.setTimeout;
+  clearTimeout: typeof global.clearTimeout;
+  logError = (err: Error|null) => err && this.log.error(err);
 
-  const listen = (channel, callback) => {
+  constructor(pubsub: PubSub,
+    log: bunyan = logger,
+    pollTimeout = zeroIfNaN(config.pollTimeout),
+    setTimeout = global.setTimeout,
+    clearTimeout = global.clearTimeout){
+      this.pubsub = pubsub;
+      this.log = log;
+      this.pollTimeout = pollTimeout;
+      this.setTimeout = setTimeout;
+      this.clearTimeout = clearTimeout;
+    }
+ 
+    public listen = (channel?: string, callback?: ((e: Error|null, m: string|null|number)  => void | boolean) | null) => {
 
-    const done = (err, message) => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-      if (handler) {
-        pubsub.unsubscribe(channel, handler, logError);
-        handler = null;
-      }
-      if (callback) {
-        const cb = callback;
-        callback = null;
-        cb(err, message);
-      }
+      const done = (err: Error|null, message: string|null) => {
+        if (timeoutId) {
+          this.clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        if (handler) {
+          this.pubsub?.unsubscribe(channel!, handler, this.logError);
+          handler = null;
+        }
+        if (callback) {
+          const cb = callback;
+          callback = null;
+          cb(err, message);
+        }
+      };
+  
+      const timeout = () => done(null, null);
+      let timeoutId : null | ReturnType<typeof global.setTimeout> = this.setTimeout(timeout, this.pollTimeout);
+      let handler : null | ((message:any)=>void)  = (message: any) => done(null, message);
+      this.pubsub.subscribe(channel!, handler, this.logError);
     };
+  
+    public emit = (channel: string, message: string, callback: (e: Error|null) => void) => {
+      this.pubsub.publish(channel, message, callback);
+    };
+}
 
-    const timeout = () => done(null, null);
-    let timeoutId : null | ReturnType<typeof setTimeout> = setTimeout(timeout, pollTimeout);
-    let handler : null | ((message:any)=>void)  = (message: any) => done(null, message);
-    pubsub.subscribe(channel, handler, logError);
-  };
+// export const createPoll = (
+//   pubsub: PubSub,
+//   log: bunyan = logger,
+//   pollTimeout = zeroIfNaN(config.pollTimeout),
+//   setTimeout = global.setTimeout,
+//   clearTimeout = global.clearTimeout
+//  ) : {listen: (channel: string, callback: any) => void, 
+//   emit: (channel: string, message: string, callback: () => void) => void}=> {
 
-  const emit = (channel, message, callback) => {
-    pubsub.publish(channel, message, callback);
-  };
+//   const logError = (err: Error|null) => err && log.error(err);
 
-  return {listen, emit};
-};
+//   const listen = (channel: string, callback: ((e: Error|null, m: string|null)  => void) | null) => {
 
-module.exports = {createPoll};
+//     const done = (err: Error|null, message: string|null) => {
+//       if (timeoutId) {
+//         clearTimeout(timeoutId);
+//         timeoutId = null;
+//       }
+//       if (handler) {
+//         pubsub?.unsubscribe(channel, handler, logError);
+//         handler = null;
+//       }
+//       if (callback) {
+//         const cb = callback;
+//         callback = null;
+//         cb(err, message);
+//       }
+//     };
+
+//     const timeout = () => done(null, null);
+//     let timeoutId : null | ReturnType<typeof setTimeout> = setTimeout(timeout, pollTimeout);
+//     let handler : null | ((message:any)=>void)  = (message: any) => done(null, message);
+//     pubsub.subscribe(channel, handler, logError);
+//   };
+
+//   const emit = (channel: string, message: string, callback: () => void) => {
+//     pubsub.publish(channel, message, callback);
+//   };
+
+//   return {listen, emit};
+// };

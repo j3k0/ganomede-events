@@ -1,11 +1,14 @@
 // unit tests for events.middleware.post
 
-'use strict';
-
 import td from 'testdouble';
-import restify from 'restify';
+import {Request, Response, InternalServerError, InvalidContentError} from 'restify';
 import {parsePostParams} from '../src/parse-http-params';
-import {expect} from 'chai';
+import {expect} from 'chai'; 
+import {createMiddleware as createPostMiddlware} from '../src/events.middleware.post';
+import { EventsStore } from '../src/events.store';
+import { Poll } from '../src/poll';
+import { NextFunction } from 'express';
+import Logger from 'bunyan';
 
 const {anything, isA} = td.matchers;
 const {verify, when} = td;
@@ -13,13 +16,13 @@ const calledOnce = {times: 1, ignoreExtraArgs: true};
 
 describe('events.middleware.post', () => {
 
-  let poll;
-  let store;
-  let middleware;
-  let log;
-  let req;
-  let res;
-  let next;
+  let poll: Poll;
+  let store: EventsStore;
+  let middleware: any;
+  let log: Logger;
+  let req: Request;
+  let res: Response;
+  let next: NextFunction;
 
   const FAILING_ADD_CHANNEL = 'failing-add-channel';
   const FAILING_EMIT_CHANNEL = 'failing-emit-channel';
@@ -33,21 +36,21 @@ describe('events.middleware.post', () => {
   const SUCCESS_EVENT_WITH_ID = Object.assign(
     {id: SUCCESS_ID}, SUCCESS_EVENT);
 
-  const testChannels = {};
+  const testChannels: {[key: string]: () => void} = {};
 
   // FAILING_ADD_CHANNEL:
   //  - addEvent fails with a InternalServerError
   testChannels[FAILING_ADD_CHANNEL] = () => {
-    when(store.addEvent(FAILING_ADD_CHANNEL, anything()))
-      .thenCallback(new restify.InternalServerError());
+    when(store.addEvent(FAILING_ADD_CHANNEL, anything(), td.callback))
+      .thenCallback(new InternalServerError());
   };
 
   // SUCCESS_CHANNEL:
   //  - addEvent and emit succeeds
   testChannels[SUCCESS_CHANNEL] = () => {
-    when(store.addEvent(SUCCESS_CHANNEL, SUCCESS_EVENT))
+    when(store.addEvent(SUCCESS_CHANNEL, SUCCESS_EVENT, td.callback))
       .thenCallback(null, SUCCESS_EVENT_WITH_ID);
-    td.when(poll.emit(SUCCESS_CHANNEL, anything()))
+    td.when(poll.emit(SUCCESS_CHANNEL, anything(), td.callback))
       .thenCallback(null);
   };
 
@@ -55,30 +58,29 @@ describe('events.middleware.post', () => {
   //  - addEvent succeeds
   //  - emit fails with a InternalServerError
   testChannels[FAILING_EMIT_CHANNEL] = () => {
-    when(store.addEvent(FAILING_EMIT_CHANNEL, SUCCESS_EVENT))
+    when(store.addEvent(FAILING_EMIT_CHANNEL, SUCCESS_EVENT, td.callback))
       .thenCallback(null, SUCCESS_EVENT_WITH_ID);
-    td.when(poll.emit(FAILING_EMIT_CHANNEL, anything()))
-      .thenCallback(new restify.InternalServerError());
+    td.when(poll.emit(FAILING_EMIT_CHANNEL, anything(), td.callback))
+      .thenCallback(new InternalServerError());
   };
 
   beforeEach(() => {
 
-    store = td.object(['addEvent']);
-    when(store.addEvent(anything(), anything()))
+    store = td.object(['addEvent']) as EventsStore;
+    when(store.addEvent(anything(), anything(), td.callback))
       .thenCallback(new Error('unexpected store.addEvent'));
 
-    poll = td.object(require('../src/poll.js').createPoll({}));
-    when(poll.emit(anything(), anything()))
+    poll = td.object(new Poll({} as any)) as Poll;
+    when(poll.emit(anything(), anything(), td.callback))
       .thenCallback(new Error('unexpected poll.emit'));
 
-    log = td.object(['error', 'info']);
+    log = td.object(['error', 'info'])  as Logger;
 
-    middleware = require('../src/events.middleware.post')
-      .createMiddleware({poll, store, log});
+    middleware = createPostMiddlware(poll, store, log);
 
     const input = validInput();
-    req = input.req;
-    res = input.res;
+    req = input.req as Request;
+    res = input.res as Response;
     next = input.next;
   });
 
@@ -91,10 +93,10 @@ describe('events.middleware.post', () => {
   const validInput = () => ({
     req: validRequest(),
     res: td.object(['json']),
-    next: td.function('next')
+    next: td.function('next') as NextFunction
   });
 
-  const withChannel = (channel) => {
+  const withChannel = (channel: any) => {
     if (testChannels[channel])
       testChannels[channel]();
     req.body.channel = channel;
@@ -104,13 +106,13 @@ describe('events.middleware.post', () => {
   it('fails when channel parameter is undefined', () => {
     withChannel(undefined);
     verify(next(), calledOnce);
-    verify(next(isA(restify.InvalidContentError)));
+    verify(next(isA(InvalidContentError)));
   });
 
   it('fails when store.addEvent fails', () => {
     withChannel(FAILING_ADD_CHANNEL);
     verify(next(), calledOnce);
-    verify(next(isA(restify.InternalServerError)));
+    verify(next(isA(InternalServerError)));
   });
 
   it('logs poll.emit failures to the console', () => {
@@ -149,7 +151,7 @@ describe('events.middleware.post', () => {
     });
 
     it('from must be non-empty string', () => {
-      const t = (input) => {
+      const t = (input: any) => {
         const actual = parsePostParams(input);
         expect(actual).to.be.instanceof(Error);
         expect((actual as Error).message).to.equal('Invalid from');
@@ -163,7 +165,7 @@ describe('events.middleware.post', () => {
     });
 
     it('type must be non-empty string', () => {
-      const t = (input) => {
+      const t = (input: any) => {
         const actual = parsePostParams(input);
         expect(actual).to.be.instanceof(Error);
         expect((actual as Error).message).to.equal('Invalid type');
@@ -177,7 +179,7 @@ describe('events.middleware.post', () => {
     });
 
     it('data must be non-null object or not present', () => {
-      const t = (input) => {
+      const t = (input: any) => {
         const actual = parsePostParams(input);
         expect(actual).to.be.instanceof(Error);
         expect((actual as Error).message).to.equal('Invalid data');
@@ -190,7 +192,7 @@ describe('events.middleware.post', () => {
     });
 
     it('client id must be non-empty string', () => {
-      const t = (input) => {
+      const t = (input: any) => {
         const actual = parsePostParams(input);
         expect(actual).to.be.instanceof(Error);
         expect((actual as Error).message).to.equal('Invalid Client ID');
@@ -204,7 +206,7 @@ describe('events.middleware.post', () => {
     });
 
     it('channel must be non-empty string', () => {
-      const t = (input) => {
+      const t = (input: any) => {
         const actual = parsePostParams(input);
         expect(actual).to.be.instanceof(Error);
         expect((actual as Error).message).to.equal('Invalid Channel');

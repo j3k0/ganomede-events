@@ -1,27 +1,28 @@
-'use strict';
 
+import {RedisClient} from 'redis';
 import async from 'async';
-const {requireSecret} = require('./middlewares');
-const eventsStore = require('./events.store');
-const redisStore = require('./redis.store');
-const redisPubSub = require('./redis.pubsub');
-const {createPoll} = require('./poll');
+import {requireSecret} from './middlewares';
+import {createStore as createEventsStore, EventsStore} from './events.store';
+import {createStore as createRedisStore} from './redis.store';
+import {Poll} from './poll';
+import { Server } from 'restify';
+import { PubSub } from './redis.pubsub';
+import { createMiddleware as createMiddlewareGet } from './events.middleware.get';
+import { createMiddleware as createMiddlewarePost } from './events.middleware.post';
 
-const router = (prefix, server, redisClient) => {
+export const createEventsRouter = (prefix: string, server: Server, redisClient: RedisClient) => {
 
-  const itemsStore = redisStore.createStore({redisClient});
-  const store = eventsStore.createStore({itemsStore});
-  const redisPubClient = redisClient.duplicate();
-  const redisSubClient = redisClient.duplicate();
-  const pubsub = redisPubSub.createPubSub({
+  const itemsStore = createRedisStore(redisClient);
+  const store: EventsStore = createEventsStore(itemsStore);
+  const redisPubClient: RedisClient = redisClient.duplicate();
+  const redisSubClient: RedisClient = redisClient.duplicate();
+  const pubsub: PubSub = new PubSub(
     redisPubClient, redisSubClient
-  });
-  const poll = createPoll({pubsub});
+  );
+  const poll = new Poll(pubsub);
 
-  const getEvents = require('./events.middleware.get')
-    .createMiddleware({store, poll});
-  const postEvent = require('./events.middleware.post')
-    .createMiddleware({store, poll});
+  const getEvents = createMiddlewareGet(poll, store);
+  const postEvent = createMiddlewarePost(poll, store);
 
   server.post(`${prefix}/events`,
     requireSecret, postEvent);
@@ -29,7 +30,7 @@ const router = (prefix, server, redisClient) => {
     requireSecret, getEvents);
 
   return {
-    close: (cb) => {
+    close: (cb: () => void) => {
       async.parallel([
         (cb) => redisPubClient.quit(cb),
         (cb) => redisSubClient.quit(cb)
@@ -37,5 +38,3 @@ const router = (prefix, server, redisClient) => {
     }
   };
 };
-
-module.exports = router;

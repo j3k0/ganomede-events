@@ -1,7 +1,8 @@
-'use strict';
 
-const os = require('os');
-const pk = require('../package.json');
+import os from 'os';
+import pk from '../package.json';
+import { Request, Response, Server } from 'restify';
+import {NextFunction} from 'express';
 
 const aboutJson: string = JSON.stringify({
   hostname: os.hostname(),
@@ -11,13 +12,13 @@ const aboutJson: string = JSON.stringify({
   startDate: new Date().toISOString()
 });
 
-const sendAbout = (req, res, next) => {
+const sendAbout = (req: Request, res: Response, next: NextFunction) => {
   res.header('Content-Type', 'application/json; charset=UTF-8');
   res.end(aboutJson);
   next();
 };
 
-export const createAbout = (prefix, server) => {
+export const createAbout = (prefix: string, server: Server) => {
   server.get('/about', sendAbout);
   server.get(`${prefix}/about`, sendAbout);
 };

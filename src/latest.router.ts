@@ -1,38 +1,19 @@
-'use strict';
+
+import {requireSecret}  from './middlewares';
+import {createStore as createEventsStore, EventsStore} from './events.store';
+import {createStore as createRedisStore, RedisStore} from './redis.store';
+import { Server } from 'restify';
+import { RedisClient } from 'redis';
+import { createMiddleware as createMiddlewareLatest } from './latest.middleware.get';
+
+export const latest = (prefix: string, server: Server, redisClient: RedisClient) : void=> {
 
 
-import async from 'async';
-const {requireSecret} = require('./middlewares');
-const eventsStore = require('./events.store');
-const redisStore = require('./redis.store');
-const redisPubSub = require('./redis.pubsub');
-const {createPoll} = require('./poll');
+  const itemsStore: RedisStore = createRedisStore(redisClient);
+  const store: EventsStore = createEventsStore(itemsStore);
 
-
-export const latest = (prefix, server, redisClient) => {
-
-
-  const itemsStore = redisStore.createStore({redisClient});
-  const store = eventsStore.createStore({itemsStore});
-  // const redisPubClient = redisClient.duplicate();
-  // const redisSubClient = redisClient.duplicate();
-  // const pubsub = redisPubSub.createPubSub({
-  //   redisPubClient, redisSubClient
-  // });
-  // const poll = createPoll({pubsub});
-
-  const getLatest = require('./latest.middleware.get')
-    .createMiddleware({store});
+  const getLatest = createMiddlewareLatest(store);
 
   server.get('/latest', requireSecret, getLatest);
   server.get(`${prefix}/latest`, requireSecret, getLatest);
-
-  return {
-    close: (cb) => {
-      async.parallel([
-        // (cb) => redisPubClient.quit(cb),
-        // (cb) => redisSubClient.quit(cb)
-      ], cb);
-    }
-  };
 };

@@ -1,22 +1,21 @@
-'use strict';
 
-import restify from 'restify';
+import restify, { Request } from 'restify';
 import {requireAuth, requireSecret} from '../src/middlewares';
 import {expect} from 'chai';
 import td from 'testdouble';
 
 interface IauthdbClient{
-  getAccount(token: string, cb?: (err, redisResult)=> void): void;
+  getAccount(token: string, cb?: (err: Error, redisResult: any)=> void): void;
 }
 
 describe('Middlewares', () => {
   describe('requireSecret()', () => {
     it('calls next() if req.ganomede.secretMatches', (done) => {
-      requireSecret({ganomede: {secretMatches: true}}, {}, done);
+      requireSecret({ganomede: {secretMatches: true} } as any, {} as any, done);
     });
 
     it('calls next(error) if secret was not matched', (done) => {
-      requireSecret({ganomede: {secretMatches: false}}, {}, (err) => {
+      requireSecret({ganomede: {secretMatches: false}} as any, {} as any, (err) => {
         expect(err).to.be.instanceof(restify.RestError);
         expect(err).to.have.property('restCode', 'InvalidCredentialsError');
         done();
@@ -37,7 +36,7 @@ describe('Middlewares', () => {
       td.when(authdbClient.getAccount('token', td.callback))
         .thenCallback(null, 'user');
 
-      mw(req, {}, (err) => {
+      mw(req as any, {} as any, (err) => {
         expect(err).to.not.be.ok;
         expect(req.ganomede).to.have.property('userId', 'user');
         expect(req.ganomede).to.not.have.property('secretMatches');
@@ -51,7 +50,7 @@ describe('Middlewares', () => {
         ganomede: {}
       };
 
-      mw(req, {}, (err) => {
+      mw(req as any, {} as any, (err) => {
         expect(err).to.not.be.ok;
         expect(req.ganomede).to.have.property('userId', 'user');
         expect(req.ganomede).to.have.property('secretMatches', true);
@@ -68,7 +67,7 @@ describe('Middlewares', () => {
       td.when(authdbClient.getAccount('oops', td.callback))
         .thenCallback(null, null);
 
-      mw(req, {}, (err) => {
+      mw(req as any, {} as any, (err) => {
         expect(err).to.be.instanceof(restify.RestError);
         expect(err).to.have.property('restCode', 'InvalidCredentialsError');
         expect(req.ganomede).to.not.have.property('secretMatches');
@@ -85,7 +84,7 @@ describe('Middlewares', () => {
       td.when(authdbClient.getAccount('not-42.oops'))
         .thenCallback(null, null);
 
-      mw(req, {}, (err) => {
+      mw(req as any, {} as any, (err) => {
         expect(err).to.be.instanceof(restify.RestError);
         expect(err).to.have.property('restCode', 'InvalidCredentialsError');
         expect(req.ganomede).to.not.have.property('secretMatches');
@@ -94,7 +93,7 @@ describe('Middlewares', () => {
     });
 
     it('token is missing', (done) => {
-      mw({params: Object.create(null)}, {}, (err) => {
+      mw({params: Object.create(null)} as any, {} as any, (err) => {
         expect(err).to.be.instanceof(restify.RestError);
         expect(err).to.have.property('restCode', 'InvalidAuthTokenError');
         done();

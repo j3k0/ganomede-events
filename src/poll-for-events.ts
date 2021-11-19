@@ -1,16 +1,20 @@
-'use strict';
 
-import restify from 'restify';
+import {DefiniteHttpError, InternalServerError} from 'restify';
+import { EventsStore } from './events.store';
+import { Poll } from './poll';
+import { LoadEventsParamType } from './events.store';
 
-module.exports = (store, poll, params, callback) => {
+export const pollForEvents = (store: EventsStore, poll: Poll, params: any, callback: (err: Error|null|DefiniteHttpError, res?: any) => void) => {
   const {after, channel} = params;
 
-  const loadEvents = (cb) =>
-    store.loadEvents(channel, params, cb);
+  const _loadEventsparams: LoadEventsParamType = params;
+
+  const loadEvents = (cb: (e: Error|null|undefined, res?: any) => void) =>
+    store.loadEvents(channel, _loadEventsparams, cb);
 
   // Process the outcome of store.loadEvents,
   // returns true iff the middleware's job is over (next was called).
-  const processLoad = (err, events, minimalEventsCount = 0) => {
+  const processLoad = (err: Error|null|undefined, events: [], minimalEventsCount = 0) => {
     if (err) {
       callback(err);
       return true;
@@ -29,11 +33,11 @@ module.exports = (store, poll, params, callback) => {
   //         -> reload and output events.
   //  - when no new messages are received,
   //         -> output an empty array
-  const processPoll = (err, message) => {
+  const processPoll = (err: Error|null, message: string|number|null) => {
     if (err)
-      return callback(new restify.InternalServerError('polling failed'));
+      return callback(new InternalServerError('polling failed'));
     else {
-      if (message > after)
+      if (message && message > after)
         return loadEvents(processLoad);
       else
         return processLoad(null, []); // timeout is not an error but expected behavior
@@ -42,6 +46,6 @@ module.exports = (store, poll, params, callback) => {
 
   const pollEvents = () => poll.listen(channel, processPoll);
 
-  loadEvents((err, events) =>
+  loadEvents((err: Error|null|undefined, events: []) =>
     (processLoad(err, events, 1) || pollEvents()));
 };

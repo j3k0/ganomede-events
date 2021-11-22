@@ -118,15 +118,15 @@ describe('events.middleware.get', () => {
     next: td.function('next') as NextFunction
   });
 
-  const withChannel = (channel: string) => {
-    if (testChannels[channel])
+  const withChannel = (channel: string | undefined) => {
+    if (channel !== undefined && testChannels[channel])
       testChannels[channel]();
     req.params.channel = channel;
     middleware(req, res, next);
   };
 
   it('fails when channel parameter is undefined', () => {
-    withChannel(undefined as any);
+    withChannel(undefined);
     verify(next(isA(InvalidContentError)));
     verify(next(), calledOnce);
   });

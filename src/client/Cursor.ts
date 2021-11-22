@@ -2,11 +2,20 @@
 import util from 'util';
 import lodash from 'lodash';
 
+export type CursorPosition = {
+  after?: number | null;
+  limit?: number | null;
+}
+
+export type CursorParams = CursorPosition & {
+  channel: string;
+}
+
 export class Cursor {
   channel: string = '';
-  after: number | null;
-  limit: null | undefined;
-  constructor(channel?: string, { after = null, limit = null } = {}) {
+  after?: number | null;
+  limit?: number | null;
+  constructor(channel?: string, { after = null, limit = null}: CursorPosition = {}) {
     if (typeof channel !== 'string' || (channel.length === 0)) {
       const message = util.format(
         'new Cursor() requires channel to be non-empty string, got %j (%s)',
@@ -32,14 +41,14 @@ export class Cursor {
       : this;
   }
 
-  toQuery() {
-    const qs: { channel: string, after?: number, limit?: string } = { channel: this.channel };
+  toQuery(): CursorParams {
+    const qs: CursorParams = { channel: this.channel };
 
     if (this.after !== null)
-      qs['after'] = this.after;
+      qs.after = this.after;
 
     if (this.limit !== null)
-      qs['limit'] = this.limit;
+      qs.limit = this.limit;
 
     return qs;
   }

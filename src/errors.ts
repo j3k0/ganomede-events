@@ -51,31 +51,23 @@ import { logger } from './logger';
 // Values for error#severity: how to print it inside `sendHttpError`.
 // https://github.com/j3k0/ganomede/issues/11
 // https://github.com/trentm/node-bunyan#levels
-const severity = {
-  fatal: 'fatal',  // (60): The service/app is going to stop or become unusable now. An operator should definitely look into this soon.
-  error: 'error',  // (50): Fatal for a particular request, but the service/app continues servicing other requests. An operator should look at this soon(ish).
-  warn: 'warn',    // (40): A note on something that should probably be looked at by an operator eventually.
-  info: 'info',    // (30): Detail on regular operation.
-  debug: 'debug',  // (20): Anything else, i.e. too verbose to be included in "info" level.
-  trace: 'trace'   // (10): Logging from external libraries used by your app or very detailed application logging.
+export enum Severity {
+  fatal = 'fatal', // (60): The service/app is going to stop or become unusable now. An operator should definitely look into this soon.
+  error = 'error', // (50): Fatal for a particular request, but the service/app continues servicing other requests. An operator should look at this soon(ish).
+  warn = 'warn', // (40): A note on something that should probably be looked at by an operator eventually.
+  info = 'info', // (30): Detail on regular operation.
+  debug = 'debug', // (20): Anything else, i.e. too verbose to be included in "info" level.
+  trace = 'trace', // (10): Logging from external libraries used by your app or very detailed application logging.
 };
-const log: { [key: string]: any } = {};
-
-log[severity.fatal] = logger.fatal.bind(logger);
-log[severity.error] = logger.error.bind(logger);
-log[severity.warn] = logger.warn.bind(logger);
-log[severity.info] = logger.info.bind(logger);
-log[severity.debug] = logger.debug.bind(logger);
-log[severity.trace] = logger.trace.bind(logger);
 
 class GanomedeError extends Error {
 
   statusCode: number = 0;
-  severity: string;
+  severity: Severity;
   constructor(...messageArgs: any) {
     super();
     this.name = this.constructor.name;
-    this.severity = severity.error;
+    this.severity = Severity.error;
 
     if (messageArgs.length > 0)
       this.message = util.format.apply(util, messageArgs);
@@ -104,7 +96,7 @@ export class RequestValidationError extends GanomedeError {
     super(...messageArgs);
     this.name = name;
     this.statusCode = 400;
-    this.severity = severity.info;
+    this.severity = Severity.info;
   }
 }
 
@@ -112,7 +104,7 @@ export class InvalidAuthTokenError extends GanomedeError {
   constructor() {
     super('Invalid auth token');
     this.statusCode = 401;
-    this.severity = severity.info;
+    this.severity = Severity.info;
   }
 }
 
@@ -120,7 +112,7 @@ export class InvalidCredentialsError extends GanomedeError {
   constructor() {
     super('Invalid credentials');
     this.statusCode = 401;
-    this.severity = severity.info;
+    this.severity = Severity.info;
   }
 }
 
@@ -147,7 +139,7 @@ export const sendHttpError = (next: Next, err: Error | DefiniteHttpError) => {
   // So those have `statusCode` and convertable to rest errors.
   // In case they don't, we die (because programmers error ("upcast" it) not runtime's).
   if (err instanceof GanomedeError) {
-    log[err.severity](err);
+    logger[err.severity](err);
     return next(toRestError(err));
   }
 
@@ -172,11 +164,10 @@ export const sendHttpError = (next: Next, err: Error | DefiniteHttpError) => {
   next(err);
 };
 
-module.exports = {
-  GanomedeError,
-  RequestValidationError,
-  InvalidAuthTokenError,
-  InvalidCredentialsError,
-  sendHttpError,
-  severity
-};
+// module.exports = {
+//   GanomedeError,
+//   RequestValidationError,
+//   InvalidAuthTokenError,
+//   InvalidCredentialsError,
+//   sendHttpError
+// };

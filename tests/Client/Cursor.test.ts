@@ -17,7 +17,7 @@ describe('Cursor', () => {
     });
 
     it('accepts non-default things', () => {
-      expect(new Cursor('channel', { limit: 50 as any })).to.eql({
+      expect(new Cursor('channel', { limit: 50 })).to.eql({
         channel: 'channel',
         after: null,
         limit: 50
@@ -40,7 +40,7 @@ describe('Cursor', () => {
     });
 
     it('advancing with empty or malformed array returns self', () => {
-      expect(start.advance([] as any)).to.equal(start);
+      expect(start.advance([])).to.equal(start);
       expect(start.advance([{}] as any)).to.equal(start);
     });
 
@@ -57,21 +57,21 @@ describe('Cursor', () => {
     });
 
     it('includes after if it is non-null', () => {
-      expect(new Cursor('channel', { after: 40 as any }).toQuery()).to.eql({
+      expect(new Cursor('channel', { after: 40 }).toQuery()).to.eql({
         channel: 'channel',
         after: 40
       });
     });
 
     it('includes limit if it is non-null', () => {
-      expect(new Cursor('channel', { limit: 99 as any }).toQuery()).to.eql({
+      expect(new Cursor('channel', { limit: 99 }).toQuery()).to.eql({
         channel: 'channel',
         limit: 99
       });
     });
 
     it('includes all non-null things', () => {
-      expect(new Cursor('channel', { after: 40 as any, limit: 99 as any }).toQuery()).to.eql({
+      expect(new Cursor('channel', { after: 40, limit: 99 }).toQuery()).to.eql({
         channel: 'channel',
         after: 40,
         limit: 99

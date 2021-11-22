@@ -10,6 +10,7 @@ import { RedisClient } from 'redis';
 import td from 'testdouble';
 import { EventsStore } from '../src/events.store';
 import { AsyncResultCallback } from 'async';
+import { Server } from 'restify';
 
 const { anything } = td.matchers;
 const { when } = td;
@@ -69,7 +70,7 @@ describe('parse-http-params', () => {
 
 describe('events.latest.get', () => {
 
-  const server = createServer();
+  let server: Server | null = null;
   let store: EventsStore | null;
 
   beforeEach(done => {
@@ -82,6 +83,7 @@ describe('events.latest.get', () => {
     // when(store.loadLatestItems(anything(), anything(), td.callback))
     //   .thenCallback(new Error('unexpected store.loadLatestItems'));
 
+    server = createServer();
     latest(config.http.prefix, server, redisClient, store);
     server.listen(done);
   });
@@ -126,7 +128,7 @@ describe('events.latest.get', () => {
       .get(url)
       .query({ channel: SUCCESS_CHANNEL, limit: 1, secret: process.env.API_SECRET })
       .end((err, res) => {
-        expect(JSON.stringify(res.body)).to.equal('[{"id":2,"from":"from2","type":"type3","data":{"m":1,"x":9}}]');
+        expect(res.body).to.eql([{id:2,from:"from2",type:"type3",data:{m:1,x:9}}]);
         expect(err).to.be.null;
         expect(res.status).to.equal(200);
         done();
@@ -136,14 +138,14 @@ describe('events.latest.get', () => {
 
   it(`returns the list of events for non-empty channel`, (done) => {
 
-    td.when(redisClient?.zrange(`${NON_EMPTY_CHANNEL}:keys`, -1, -1, td.callback))
-      .thenCallback(null, ['my-event-id']);
+    // td.when(redisClient?.zrange(`${NON_EMPTY_CHANNEL}:keys`, -1, -1, td.callback))
+    //   .thenCallback(null, ['my-event-id']);
 
     td.when(store?.loadLatestItems(NON_EMPTY_CHANNEL, 1, td.callback))
       .thenCallback(null, [{ stuff: "things" }]);
 
-    td.when(redisClient?.mget(['my-event-id'], td.callback))
-      .thenCallback(null, ['{"stuff":"things"}']);
+    // td.when(redisClient?.mget(['my-event-id'], td.callback))
+    //   .thenCallback(null, ['{"stuff":"things"}']);
 
     supertest(server)
       .get(url)

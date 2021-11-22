@@ -53,9 +53,9 @@ export const config = {
   },
 
   redis: {
-    host: process.env.REDIS_EVENTS_PORT_6379_TCP_ADDR! || 'localhost',
-    port: +process.env.REDIS_EVENTS_PORT_6379_TCP_PORT! || 6379
+    host: process.env.REDIS_EVENTS_PORT_6379_TCP_ADDR || 'localhost',
+    port: +(process.env.REDIS_EVENTS_PORT_6379_TCP_PORT || '6379')
   },
 
-  pollTimeout: +process.env.POLL_TIMEOUT! || 5000
+  pollTimeout: +(process.env.POLL_TIMEOUT || '5000')
 };

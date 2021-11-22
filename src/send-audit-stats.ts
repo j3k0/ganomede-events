@@ -8,14 +8,20 @@ const stats = createClient(undefined);
 
 const cleanupStatsKey = (key: string) => key.replace(/[-.]/g, '_').toLowerCase();
 
-export const sendAuditStats = (req: Request, res: Response, next: NextFunction) => {
+// TODO: remove this after upgrading restify
+interface RequestWithPrivate extends Request {
+  _body: { restCode: string; }
+  route: { name: string; }
+}
+
+export const sendAuditStats = (req: RequestWithPrivate, res: Response, next: NextFunction) => {
 
   // send number of calls to this route (with response status code) with 10% sampling
-  const routeName = (req as any).route ? 'route.' + (req as any).route.name : 'invalid_route';
+  const routeName = req.route ? 'route.' + req.route.name : 'invalid_route';
   stats.increment(routeName + '.status.' + res.statusCode, 1, 0.1);
 
   // send error statuses (with response status code) with 10% sampling
-  if ((req as any)._body && (req as any)._body.restCode) {
+  if (req._body?.restCode) {
     stats.increment(routeName + '.code.' + cleanupStatsKey((req as any)._body.restCode), 1, 0.1);
   }
 

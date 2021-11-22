@@ -1,13 +1,12 @@
 // unit tests for events.middleware.get
 
 import td from 'testdouble';
-import { Request, Response, InternalServerError, InvalidContentError } from 'restify';
+import { Request, Response, InternalServerError, InvalidContentError, Next as NextFunction } from 'restify';
 import { createMiddleware } from '../src/events.middleware.get';
 import { parseGetParams } from '../src/parse-http-params';
 import { expect } from 'chai';
 import { EventsStore } from '../src/events.store';
 import { Poll } from '../src/poll';
-import { NextFunction } from 'express';
 import Logger from 'bunyan';
 const { anything, isA } = td.matchers;
 const { verify, when } = td;

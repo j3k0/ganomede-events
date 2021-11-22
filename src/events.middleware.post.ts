@@ -1,11 +1,10 @@
-import { Request, Response, InvalidContentError } from 'restify';
+import { Request, Response, InvalidContentError, Next as NextFunction } from 'restify';
 import { parsePostParams } from './parse-http-params';
 
 import { Poll } from './poll';
 import { logger } from './logger';
 import bunyan from 'bunyan';
 import { EventsStore } from './events.store';
-import { NextFunction } from 'express';
 
 export const createMiddleware = (
   poll: Poll, // = createPoll,

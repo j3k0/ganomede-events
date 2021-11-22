@@ -10,8 +10,7 @@
 //
 // Reponds with a JSON array of events (see README.md)
 //
-import { Request, Response, InvalidContentError, DefiniteHttpError } from 'restify';
-import { NextFunction } from 'express';
+import { Request, Response, InvalidContentError, DefiniteHttpError, Next as NextFunction } from 'restify';
 import { parseGetParams } from './parse-http-params';
 import { pollForEvents } from './poll-for-events';
 

@@ -1,9 +1,8 @@
-import { Request, Response, Server, ServerOptions } from 'restify';
+import { Request, Response, Server, ServerOptions, Next as NextFunction } from 'restify';
 import restify from 'restify';
 import { logger } from './logger';
 import { config } from '../config';
 import { sendAuditStats } from './send-audit-stats';
-import { NextFunction } from 'express';
 
 const matchSecret = (obj: Request, prop: string) => {
   const has = obj && (obj as any)[prop] && Object.hasOwnProperty.call((obj as any)[prop], 'secret');
@@ -58,7 +57,7 @@ export const createServer = () => {
   }
   server.use(setRequestId);
 
-  // Send audit statistics 
+  // Send audit statistics
   server.on('after', sendAuditStats);
 
   // Init object to dump our stuff into.

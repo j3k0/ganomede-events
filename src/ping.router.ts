@@ -1,6 +1,5 @@
 
-import { Request, Response, Server } from 'restify';
-import { NextFunction } from 'express';
+import { Request, Response, Server, Next as NextFunction } from 'restify';
 
 const get = (req: Request, res: Response, next: NextFunction) => {
   res.send(`pong/${req.params.token}`);

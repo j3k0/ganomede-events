@@ -1,9 +1,8 @@
 
 import lodash from 'lodash';
-import restify, { InternalServerError, Request, Response } from 'restify';
+import restify, { InternalServerError, Request, Response, Next as NextFunction } from 'restify';
 import { InvalidAuthTokenError, InvalidCredentialsError, sendHttpError } from './errors';
 import { logger } from './logger';
-import { NextFunction } from 'express';
 
 export const requireSecret = (req: Request, res: Response, next: NextFunction) => {
   return (req as any)['ganomede'].secretMatches

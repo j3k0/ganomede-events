@@ -10,9 +10,8 @@
 // Reponds with a JSON array of events (see README.md)
 //
 
-import { InvalidContentError, Request, Response } from 'restify';
+import { InvalidContentError, Request, Response, Next as NextFunction } from 'restify';
 import { parseLatestGetParams } from './parse-http-params';
-import { NextFunction } from 'express';
 import { EventsStore } from './events.store';
 
 export const createMiddleware = (

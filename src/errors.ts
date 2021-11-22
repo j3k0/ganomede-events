@@ -1,8 +1,7 @@
 
 import util from 'util';
-import restify, { DefiniteHttpError } from 'restify';
+import restify, { DefiniteHttpError, Next } from 'restify';
 import { logger } from './logger';
-import { NextFunction } from 'express';
 
 
 
@@ -143,7 +142,7 @@ const captureStack = () => {
 };
 
 // Kept forgetting `next` part, so let's change this to (next, err).
-export const sendHttpError = (next: NextFunction, err: Error | DefiniteHttpError) => {
+export const sendHttpError = (next: Next, err: Error | DefiniteHttpError) => {
   // When we have an instance of GanomedeError, it means stuff that's defined here, in this file.
   // So those have `statusCode` and convertable to rest errors.
   // In case they don't, we die (because programmers error ("upcast" it) not runtime's).

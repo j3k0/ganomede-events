@@ -3,6 +3,7 @@ import restify from 'restify';
 import { logger } from './logger';
 import { config } from '../config';
 import { sendAuditStats } from './send-audit-stats';
+import { RequestWithGanomede } from './middlewares';
 
 const matchSecret = (obj: Request, prop: string) => {
   const has = obj && (obj as any)[prop] && Object.hasOwnProperty.call((obj as any)[prop], 'secret');
@@ -42,12 +43,12 @@ export const createServer = () => {
     req.log.info({ req_id: req.id() }, `${req.method} ${req.url}`));
   server.use(requestLogger);
 
-  server.use(restify.queryParser());
-  server.use(restify.bodyParser());
+  server.use(restify.plugins.queryParser());
+  server.use(restify.plugins.bodyParser());
 
   // Audit requests
   server.on('after', filteredLogger(process.env.NODE_ENV === 'production',
-    restify.auditLogger({ log: logger/*, body: true*/ })));
+    restify.plugins.auditLogger({ log: logger, event: 'after'/*, body: true*/ })));
 
   // Automatically add a request-id to the response
   function setRequestId(req: Request, res: Response, next: NextFunction) {
@@ -62,7 +63,8 @@ export const createServer = () => {
 
   // Init object to dump our stuff into.
   server.use((req: Request, res: Response, next: NextFunction) => {
-    (req as any)['ganomede'] = {
+
+    (req as RequestWithGanomede).ganomede = {
       secretMatches: matchSecret(req, 'body') || matchSecret(req, 'query')
     };
 

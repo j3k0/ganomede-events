@@ -1,12 +1,13 @@
 // unit tests for events.middleware.post
 
 import td from 'testdouble';
-import { Request, Response, InternalServerError, InvalidContentError, Next as NextFunction } from 'restify';
+import { Request, Response, Next as NextFunction } from 'restify';
+import { InternalServerError, InvalidContentError } from 'restify-errors'
 import { parsePostParams } from '../src/parse-http-params';
 import { expect } from 'chai';
 import { createMiddleware as createPostMiddlware } from '../src/events.middleware.post';
 import { EventsStore } from '../src/events.store';
-import { Poll } from '../src/poll';
+import { Poll, PollConfig } from '../src/poll';
 import Logger from 'bunyan';
 
 const { anything, isA } = td.matchers;
@@ -69,7 +70,7 @@ describe('events.middleware.post', () => {
     when(store.addEvent(anything(), anything(), td.callback))
       .thenCallback(new Error('unexpected store.addEvent'));
 
-    poll = td.object(new Poll({} as any)) as Poll;
+    poll = td.object(new Poll({} as PollConfig)) as Poll;
     when(poll.emit(anything(), anything(), td.callback))
       .thenCallback(new Error('unexpected poll.emit'));
 
@@ -79,7 +80,7 @@ describe('events.middleware.post', () => {
 
     const input = validInput();
     req = input.req as Request;
-    res = input.res as any;
+    res = input.res as Response;
     next = input.next;
   });
 

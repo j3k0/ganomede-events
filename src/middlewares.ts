@@ -1,11 +1,17 @@
 
 import lodash from 'lodash';
-import restify, { InternalServerError, Request, Response, Next as NextFunction } from 'restify';
+import { Request, Response, Next as NextFunction } from 'restify';
+
+import { InternalServerError } from 'restify-errors';
 import { InvalidAuthTokenError, InvalidCredentialsError, sendHttpError } from './errors';
 import { logger } from './logger';
 
+export interface RequestWithGanomede extends Request {
+  ganomede: { secretMatches: boolean; userId?: string; }
+}
+
 export const requireSecret = (req: Request, res: Response, next: NextFunction) => {
-  return (req as any)['ganomede'].secretMatches
+  return (req as RequestWithGanomede).ganomede.secretMatches
     ? next()
     : sendHttpError(next, new InvalidCredentialsError());
 };
@@ -17,15 +23,15 @@ const parseUserIdFromSecretToken = (secret: string, token: string) => {
 };
 
 export const requireAuth = ({ authdbClient = null, secret = '', paramName = 'token' }:
-  { authdbClient: any, secret: string, paramName?: string } = { authdbClient: null, secret: '', paramName: 'token' }) => (req: Request, res: Response, next: NextFunction) => {
+  { authdbClient: any, secret: string, paramName?: string } = { authdbClient: null, secret: '', paramName: 'token' }) => (req: RequestWithGanomede, res: Response, next: NextFunction) => {
     const token = lodash.get(req, `params.${paramName}`);
     if (!token)
       return sendHttpError(next, new InvalidAuthTokenError());
 
     const spoofed = secret && parseUserIdFromSecretToken(secret, token);
     if (spoofed) {
-      (req as any)['ganomede'].secretMatches = true;
-      (req as any)['ganomede'].userId = spoofed;
+      req.ganomede.secretMatches = true;
+      req.ganomede.userId = spoofed;
       return next();
     }
 
@@ -48,7 +54,7 @@ export const requireAuth = ({ authdbClient = null, secret = '', paramName = 'tok
       if (!redisResult)
         return sendHttpError(next, new InvalidCredentialsError());
 
-      (req as any)['ganomede'].userId = userId;
+      req.ganomede.userId = userId;
       return next();
     });
   };

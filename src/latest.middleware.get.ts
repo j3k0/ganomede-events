@@ -10,19 +10,20 @@
 // Reponds with a JSON array of events (see README.md)
 //
 
-import { InvalidContentError, Request, Response, Next as NextFunction } from 'restify';
+import { Request, Response, Next as NextFunction } from 'restify';
+
+import { InvalidContentError } from 'restify-errors';
 import { parseLatestGetParams } from './parse-http-params';
 import { EventsStore } from './events.store';
 
 export const createMiddleware = (
   store: EventsStore
 ) => (req: Request, res: Response, next: NextFunction) => {
-  const params = parseLatestGetParams(req.params);
+  const params = parseLatestGetParams(req.query);
   if (params instanceof Error)
     return next(new InvalidContentError(params.message));
 
   const { channel, limit } = params;
-
   store.loadLatestItems(channel, limit, (err: Error | null | undefined, data: any[]) => {
 
     if (err)

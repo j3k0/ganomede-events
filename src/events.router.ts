@@ -19,7 +19,7 @@ export const createEventsRouter = (prefix: string, server: Server, redisClient: 
   const pubsub: PubSub = new PubSub(
     redisPubClient, redisSubClient
   );
-  const poll = new Poll(pubsub);
+  const poll = new Poll({ pubsub});
 
   const getEvents = createMiddlewareGet(poll, store);
   const postEvent = createMiddlewarePost(poll, store);

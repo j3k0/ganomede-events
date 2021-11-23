@@ -17,7 +17,7 @@ describe('EventsClient', () => {
 
   it('#getEvents() request events', (done) => {
     const client = createClient();
-    const cursor = new Cursor('channel', { limit: 10 as any });
+    const cursor = new Cursor('channel', { limit: 10 });
     const validPath = td.matchers.contains({
       path: '/events/v1/events?channel=channel&limit=10&clientId=test&secret=api_secret'
     });

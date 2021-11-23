@@ -1,4 +1,5 @@
-import { Request, Response, InvalidContentError, Next as NextFunction } from 'restify';
+import { Request, Response, Next as NextFunction } from 'restify';
+import { InvalidContentError} from 'restify-errors';
 import { parsePostParams } from './parse-http-params';
 
 import { Poll } from './poll';
@@ -11,7 +12,7 @@ export const createMiddleware = (
   store: EventsStore,
   log: bunyan = logger
 ) => (req: Request, res: Response, next: NextFunction) => {
-  const params = parsePostParams(req.body as any);
+  const params = parsePostParams(req.body);
   if (params instanceof Error)
     return next(new InvalidContentError(params.message));
 

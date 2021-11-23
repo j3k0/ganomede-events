@@ -26,7 +26,36 @@ const nonEmptyString = (paramValue: any, defaultValue = undefined) => {
 const parseAfter = toIntWithinRange({ min: 0, byDefault: 0 });
 const parseLimit = toIntWithinRange({ min: 1, max: 100, byDefault: 100 });
 
-export const parseGetParams = (params: { clientId: string, channel: string, after?: any, limit?: any } = { clientId: '', channel: '', after: '', limit: '' }): Error | {} => {
+export type ParsedGetEventsParam = {
+  clientId: string;
+  channel: string;
+  after: number;
+  limit: number;
+  afterExplicitlySet: boolean
+}
+
+export type GetEventsParam = {
+  clientId: string;
+  channel: string;
+  after?: number | string | {};
+  limit?: number | string | {};
+}
+
+export type PostEventsParam = {
+  clientId: string;
+  channel: string;
+  from?: string;
+  type?: string;
+  data?: {};
+}
+
+
+export type LatestEventsParam = {
+  channel: string;
+  limit?: number;
+}
+
+export const parseGetParams = (params: GetEventsParam = { clientId: '', channel: '' }): Error | ParsedGetEventsParam => {
   const clientId = nonEmptyString(params.clientId);
   if (!clientId)
     return new Error('Invalid Client ID');
@@ -44,10 +73,10 @@ export const parseGetParams = (params: { clientId: string, channel: string, afte
     after,
     limit,
     afterExplicitlySet: hasOwnProperty(params, 'after')
-  };
+  } as ParsedGetEventsParam;
 };
 
-export const parsePostParams = (params: { clientId: string, channel: string, from: string, type: string, data?: {} } = { clientId: '', channel: '', from: '', type: '', data: '' }): Error | { clientId: string, channel: string, event: any } => {
+export const parsePostParams = (params: PostEventsParam = { clientId: '', channel: '', from: '', type: '', data: '' }): Error | { clientId: string, channel: string, event: any } => {
   const clientId = nonEmptyString(params.clientId);
   if (!clientId)
     return new Error('Invalid Client ID');
@@ -81,7 +110,7 @@ export const parsePostParams = (params: { clientId: string, channel: string, fro
 };
 
 
-export const parseLatestGetParams = (params: { channel: string, limit?: number } = { channel: '', limit: 0 }): Error | { channel: string, limit: number } => {
+export const parseLatestGetParams = (params: LatestEventsParam = { channel: '', limit: 0 }): Error | { channel: string, limit: number } => {
 
   const channel = nonEmptyString(params.channel);
   if (!channel)

@@ -90,7 +90,7 @@ describe('events.latest.get', () => {
 
   afterEach(done => {
     // redisClient.quit();
-    server.close(done);
+    server!.close(done);
     store = redisClient = null;
   });
 

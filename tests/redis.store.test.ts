@@ -27,8 +27,8 @@ describe('redis.store', function () {
 
     it('sets key to hold passed index', testableWhen(hasStore, (done) => {
 
-      td.when(redisClient?.set('something', 42 as any, td.callback)).thenCallback(null, null);
-      td.when(store?.setIndex('something', 42 as any, td.callback)).thenCallback(null, null);
+      td.when(redisClient?.set('something', String(42), td.callback)).thenCallback(null, null);
+      td.when(store?.setIndex('something', 42, td.callback)).thenCallback(null, null);
 
       store?.setIndex('something', 42, () => {
         done();
@@ -39,7 +39,7 @@ describe('redis.store', function () {
   describe('#getIndex()', () => {
     it('returns number saved under key', testableWhen(hasStore, (done) => {
 
-      td.when(redisClient?.set('something', 42 as any, td.callback)).thenCallback(null, null);
+      td.when(redisClient?.set('something', String(42), td.callback)).thenCallback(null, null);
       td.when(store?.setIndex('something', 42, td.callback)).thenCallback(null, null);
 
       td.when(redisClient?.get('something', td.callback)).thenCallback(null, 42);

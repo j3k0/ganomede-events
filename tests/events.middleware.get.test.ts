@@ -1,9 +1,10 @@
 // unit tests for events.middleware.get
 
 import td from 'testdouble';
-import { Request, Response, InternalServerError, InvalidContentError, Next as NextFunction } from 'restify';
+import { Request, Response, Next as NextFunction } from 'restify';
+import { InternalServerError, InvalidContentError } from 'restify-errors'
 import { createMiddleware } from '../src/events.middleware.get';
-import { parseGetParams } from '../src/parse-http-params';
+import { GetEventsParam, ParsedGetEventsParam, parseGetParams } from '../src/parse-http-params';
 import { expect } from 'chai';
 import { EventsStore } from '../src/events.store';
 import { Poll } from '../src/poll';
@@ -104,7 +105,7 @@ describe('events.middleware.get', () => {
   });
 
   const validRequest = () => ({
-    params: {
+    query: {
       clientId: 'test-client',
       channel: 'channel',
       after: '0',
@@ -121,7 +122,7 @@ describe('events.middleware.get', () => {
   const withChannel = (channel: string | undefined) => {
     if (channel !== undefined && testChannels[channel])
       testChannels[channel]();
-    req.params.channel = channel;
+    req.query.channel = channel;
     middleware(req, res, next);
   };
 
@@ -178,8 +179,9 @@ describe('events.middleware.get', () => {
 
     it('parses after to be int within [0, MAX_SAFE_INTEGER]', () => {
       const t = (desiredAfter: number | undefined | string | {}, expected: number) => {
-        const actual = parseGetParams({ clientId, channel, after: desiredAfter });
-        expect((actual as any)['after']).to.equal(expected);
+        let params: GetEventsParam = { clientId, channel, after: desiredAfter };
+        const actual = parseGetParams(params);
+        expect((actual as ParsedGetEventsParam).after).to.equal(expected);
       };
 
       // acceptable
@@ -196,8 +198,9 @@ describe('events.middleware.get', () => {
 
     it('parses liimt to be int within [1, 100]', () => {
       const t = (desiredLimit: number | undefined | string | {}, expected: number) => {
-        const actual = parseGetParams({ clientId, channel, limit: desiredLimit });
-        expect((actual as any)['limit']).to.equal(expected);
+        let params: GetEventsParam = { clientId, channel, limit: desiredLimit };
+        const actual = parseGetParams(params);
+        expect((actual as ParsedGetEventsParam).limit).to.equal(expected);
       };
 
       // acceptable

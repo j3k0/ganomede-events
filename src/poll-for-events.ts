@@ -1,10 +1,10 @@
 
-import { DefiniteHttpError, InternalServerError } from 'restify';
+import { InternalServerError, DefinedHttpError } from 'restify-errors';
 import { EventsStore } from './events.store';
 import { Poll } from './poll';
 import { LoadEventsParamType } from './events.store';
 
-export const pollForEvents = (store: EventsStore, poll: Poll, params: any, callback: (err: Error | null | DefiniteHttpError, res?: any) => void) => {
+export const pollForEvents = (store: EventsStore, poll: Poll, params: any, callback: (err: Error | null | DefinedHttpError, res?: any) => void) => {
   const { after, channel } = params;
 
   const _loadEventsparams: LoadEventsParamType = params;

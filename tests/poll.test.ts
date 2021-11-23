@@ -11,7 +11,7 @@ describe('poll', () => {
 
   const CHANNEL = 'channel';
   const MESSAGE = 'message';
-  const POLL_TIMEOUT = 321;
+  const POLL_TIMEOUT: number = 321;
   const TIMEOUT_ID = 1;
   let callback: (e?: Error | null, d?: any) => void;
   let log: Logger;
@@ -26,12 +26,13 @@ describe('poll', () => {
     setTimeout = td.function('setTimeout') as (typeof global.setTimeout);
     clearTimeout = td.function('clearTimeout') as (typeof global.clearTimeout);
     log = td.object(['error']) as Logger;
-    poll = new Poll(
+    poll = new Poll({
       pubsub,
       log,
-      POLL_TIMEOUT,
+      pollTimeout: POLL_TIMEOUT,
       setTimeout,
       clearTimeout
+    }
     );
   });
 

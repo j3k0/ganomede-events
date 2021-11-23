@@ -7,6 +7,10 @@ import { RedisClient } from 'redis';
 import { createEventsRouter } from '../src/events.router';
 import { config } from '../config';
 
+interface ErrorWithOrigin extends Error{
+  origin: {message: string}
+}
+
 (() => {
 
 
@@ -25,7 +29,7 @@ import { config } from '../config';
       createEventsRouter(config.http.prefix, server, redisClient);
       redisClient.info((err) => {
         // Connection to redis failed, skipping integration tests.
-        if (err && (err as any).origin && (err as any).origin.message === 'skip-test')
+        if (err && (err as ErrorWithOrigin).origin && (err as ErrorWithOrigin).origin.message === 'skip-test')
           (this as any).skip();
         else
           server.listen(done);

@@ -58,13 +58,13 @@ export class PubSub {
   private getChannelHandlers = (channel: string) =>
     this.channelHandlers[channel] || [];
 
-  publish(channel: string, message: string, cb: (e: Error | null) => void): void {
+  publish(channel: string, message: string | number | null | undefined | {} | Buffer, cb: (e: Error | null) => void): void {
 
     // logger.info({channel}, 'pubsub.publish: ' + message);
-    if (!this.isValidMessage(message))
+    if (!this.isValidMessage(message) || message == null || message == undefined)
       return cb(new Error(errors.invalidMessage));
 
-    this.redisPubClient.publish(channel, message, cb);
+    this.redisPubClient.publish(channel, String(message), cb);
   }
 
   subscribe(channel: string, handler: (message: string) => void, cb: (e: Error | null) => void): void {

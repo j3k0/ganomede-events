@@ -11,11 +11,15 @@ export type CursorParams = CursorPosition & {
   channel: string;
 }
 
+export type EventCursor = {
+  id: number
+}
+
 export class Cursor {
   channel: string = '';
   after?: number | null;
   limit?: number | null;
-  constructor(channel?: string, { after = null, limit = null}: CursorPosition = {}) {
+  constructor(channel?: string, { after = null, limit = null }: CursorPosition = {}) {
     if (typeof channel !== 'string' || (channel.length === 0)) {
       const message = util.format(
         'new Cursor() requires channel to be non-empty string, got %j (%s)',
@@ -31,7 +35,7 @@ export class Cursor {
     this.limit = limit;
   }
 
-  advance(events: { id: any }[]) {
+  advance(events?: EventCursor[] | null | Error) {
     const newestEvent = Array.isArray(events) && (events.length > 0)
       ? lodash.maxBy(events, event => event.id)
       : undefined;

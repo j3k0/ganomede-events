@@ -5,25 +5,35 @@ import { config } from '../config';
 import bunyan from 'bunyan';
 import { PubSub } from './redis.pubsub';
 
+export type PollConfig = {
+  pubsub: PubSub | null;
+  log?: bunyan;
+  pollTimeout?: number;
+  setTimeout?: typeof global.setTimeout;
+  clearTimeout?: typeof global.clearTimeout;
+}
+
 export class Poll {
 
-  pubsub: PubSub;
+  pubsub: PubSub | null;
   log: bunyan;
   pollTimeout: number;
   setTimeout: typeof global.setTimeout;
   clearTimeout: typeof global.clearTimeout;
   logError = (err: Error | null) => err && this.log.error(err);
 
-  constructor(pubsub: PubSub,
-    log: bunyan = logger,
-    pollTimeout = zeroIfNaN(config.pollTimeout),
-    setTimeout = global.setTimeout,
-    clearTimeout = global.clearTimeout) {
-    this.pubsub = pubsub;
-    this.log = log;
-    this.pollTimeout = pollTimeout;
-    this.setTimeout = setTimeout;
-    this.clearTimeout = clearTimeout;
+  constructor(options: PollConfig = {
+    pubsub: null,
+    log: logger,
+    pollTimeout: zeroIfNaN(config.pollTimeout),
+    setTimeout: global.setTimeout,
+    clearTimeout: global.clearTimeout
+  }) {
+    this.pubsub = options.pubsub;
+    this.log = options.log!;
+    this.pollTimeout = options.pollTimeout!;
+    this.setTimeout = options.setTimeout!;
+    this.clearTimeout = options.clearTimeout!;
   }
 
   public listen = (channel?: string, callback?: ((e: Error | null, m: string | null | number) => void | boolean) | null) => {
@@ -47,11 +57,11 @@ export class Poll {
     const timeout = () => done(null, null);
     let timeoutId: null | ReturnType<typeof global.setTimeout> = this.setTimeout(timeout, this.pollTimeout);
     let handler: null | ((message: any) => void) = (message: any) => done(null, message);
-    this.pubsub.subscribe(channel!, handler, this.logError);
+    this.pubsub?.subscribe(channel!, handler, this.logError);
   };
 
   public emit = (channel: string, message: string, callback: (e: Error | null) => void) => {
-    this.pubsub.publish(channel, message, callback);
+    this.pubsub?.publish(channel, message, callback);
   };
 }
 
@@ -61,7 +71,7 @@ export class Poll {
 //   pollTimeout = zeroIfNaN(config.pollTimeout),
 //   setTimeout = global.setTimeout,
 //   clearTimeout = global.clearTimeout
-//  ) : {listen: (channel: string, callback: any) => void, 
+//  ) : {listen: (channel: string, callback: any) => void,
 //   emit: (channel: string, message: string, callback: () => void) => void}=> {
 
 //   const logError = (err: Error|null) => err && log.error(err);

@@ -10,7 +10,8 @@
 //
 // Reponds with a JSON array of events (see README.md)
 //
-import { Request, Response, InvalidContentError, DefiniteHttpError, Next as NextFunction } from 'restify';
+import { Request, Response, Next as NextFunction } from 'restify';
+import { InvalidContentError, DefinedHttpError } from 'restify-errors';
 import { parseGetParams } from './parse-http-params';
 import { pollForEvents } from './poll-for-events';
 
@@ -23,11 +24,11 @@ export const createMiddleware = (
   poll: Poll, // = createPoll,
   store: EventsStore,
   log: bunyan = logger) => (req: Request, res: Response, next: NextFunction) => {
-    const params = parseGetParams(req.params);
+    const params = parseGetParams(req.query);
     if (params instanceof Error)
       return next(new InvalidContentError(params.message));
 
-    pollForEvents(store, poll, params, (err: Error | DefiniteHttpError | null, events: []) => {
+    pollForEvents(store, poll, params, (err: Error | DefinedHttpError | null, events: []) => {
       if (err) {
         log.error(err);
         return next(err);

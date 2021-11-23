@@ -3,6 +3,7 @@ import async from 'async';
 import cluster from 'cluster';
 import redis, { RedisClient } from 'redis';
 import restify, { Server } from 'restify';
+import { InternalError } from 'restify-errors';
 import curtain from 'curtain-down';
 import { config } from '../config';
 import { createAbout } from './about.router';
@@ -89,7 +90,7 @@ const child = () => {
       cluster.worker?.disconnect();
 
       const message = err.message || 'unexpected error';
-      res.send(new restify.InternalError(message));
+      res.send(new InternalError(message));
     }
     catch (err2) {
       logger.error(err2, 'error sending 500!');

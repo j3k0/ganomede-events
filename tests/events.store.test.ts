@@ -10,7 +10,7 @@ describe('events.store', () => {
     let actualEvent: any;
 
     before((done) => {
-      const itemsStore = td.object<IRedisStore>(null as any);// (['nextIndex', 'addItem']);
+      const itemsStore = td.object<IRedisStore>();// (['nextIndex', 'addItem']);
       const subject = createStore(itemsStore as RedisStore);
       const expectedHeader = td.matchers.contains({
         id: 5,
@@ -23,7 +23,7 @@ describe('events.store', () => {
         .thenCallback(null, 5);
 
       td.when(itemsStore.addItem('channel', expectedHeader, td.callback))
-        .thenCallback(null);
+        .thenCallback(null, null);
 
       subject.addEvent('channel', { from: 'me', type: 'kind', data: {} }, (err, event) => {
         expect(err).to.be.null;
@@ -48,7 +48,7 @@ describe('events.store', () => {
 
   describe('#loadEvents()', () => {
     it('updates last fetched index and loads items in case after is explicit', (done) => {
-      const itemsStore = td.object<IRedisStore>(null as any);// td.object(['setIndex', 'loadItems']);
+      const itemsStore = td.object<IRedisStore>();// td.object(['setIndex', 'loadItems']);
       const subject = createStore(itemsStore as RedisStore);
 
       td.when(itemsStore.loadItems('channel', 5, 100, td.callback))
@@ -63,7 +63,7 @@ describe('events.store', () => {
     });
 
     it('asks itemsStore for missing `after` with `clientId`', (done) => {
-      const itemsStore = td.object<IRedisStore>(null as any);// td.object(['getIndex', 'loadItems']);
+      const itemsStore = td.object<IRedisStore>();// td.object(['getIndex', 'loadItems']);
       const subject = createStore(itemsStore as RedisStore);
 
       td.when(itemsStore.getIndex('last-fetched:client:channel', td.callback))

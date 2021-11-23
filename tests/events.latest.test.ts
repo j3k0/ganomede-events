@@ -79,7 +79,7 @@ describe('events.latest.get', () => {
     store = td.object(['addEvent', 'loadLatestItems']) as EventsStore;
 
     when(store.addEvent(anything(), anything(), td.callback))
-      .thenCallback(new Error('unexpected store.addEvent'));
+      .thenCallback(new Error('unexpected store.addEvent'), null);
     // when(store.loadLatestItems(anything(), anything(), td.callback))
     //   .thenCallback(new Error('unexpected store.loadLatestItems'));
 

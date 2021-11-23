@@ -16,20 +16,21 @@ export class EventsClient extends BaseClient {
     this.secret = secret;
   }
 
-  public set api(value: any) {
-    super.apiCall = value;
-  }
 
-  public get api(): any {
-    return super.apiCall;
-  }
+  // public set api(value: any) {
+  //   super.apiCall = value;
+  // }
+
+  // public get api(): any {
+  //   return super.apiCall;
+  // }
 
   getEvents(cursor: Cursor, callback: (err: Error, events: []) => void) {
     const qs = Object.assign(cursor.toQuery(), {
       clientId: this.clientId,
       secret: this.secret
     });
-
+    console.log("getevents:", qs, callback);
     super.apiCall({ method: 'get', path: '/events', qs }, callback);
   }
 

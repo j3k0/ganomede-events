@@ -42,7 +42,7 @@ describe('events.middleware.post', () => {
   //  - addEvent fails with a InternalServerError
   testChannels[FAILING_ADD_CHANNEL] = () => {
     when(store.addEvent(FAILING_ADD_CHANNEL, anything(), td.callback))
-      .thenCallback(new InternalServerError());
+      .thenCallback(new InternalServerError(), null);
   };
 
   // SUCCESS_CHANNEL:
@@ -51,7 +51,7 @@ describe('events.middleware.post', () => {
     when(store.addEvent(SUCCESS_CHANNEL, SUCCESS_EVENT, td.callback))
       .thenCallback(null, SUCCESS_EVENT_WITH_ID);
     td.when(poll.emit(SUCCESS_CHANNEL, anything(), td.callback))
-      .thenCallback(null);
+      .thenCallback(null, null);
   };
 
   // FAILING_EMIT_CHANNEL:
@@ -61,18 +61,18 @@ describe('events.middleware.post', () => {
     when(store.addEvent(FAILING_EMIT_CHANNEL, SUCCESS_EVENT, td.callback))
       .thenCallback(null, SUCCESS_EVENT_WITH_ID);
     td.when(poll.emit(FAILING_EMIT_CHANNEL, anything(), td.callback))
-      .thenCallback(new InternalServerError());
+      .thenCallback(new InternalServerError(), null);
   };
 
   beforeEach(() => {
 
     store = td.object(['addEvent']) as EventsStore;
     when(store.addEvent(anything(), anything(), td.callback))
-      .thenCallback(new Error('unexpected store.addEvent'));
+      .thenCallback(new Error('unexpected store.addEvent'), null);
 
     poll = td.object(new Poll({} as PollConfig)) as Poll;
     when(poll.emit(anything(), anything(), td.callback))
-      .thenCallback(new Error('unexpected poll.emit'));
+      .thenCallback(new Error('unexpected poll.emit'), null);
 
     log = td.object(['error', 'info']) as Logger;
 

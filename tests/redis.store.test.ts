@@ -12,7 +12,7 @@ describe('redis.store', function () {
   let store: RedisStore | null;
 
   beforeEach(prepareRedisClient((client) => redisClient = client));
-  beforeEach(() => store = td.object<IRedisStore>(null as any) as RedisStore /*(redisClient && createStore({redisClient}))*/);
+  beforeEach(() => store = td.object<IRedisStore>() as RedisStore /*(redisClient && createStore({redisClient}))*/);
 
   afterEach(() => {
     if (redisClient) {

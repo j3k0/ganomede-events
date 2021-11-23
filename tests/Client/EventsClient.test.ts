@@ -22,10 +22,11 @@ describe('EventsClient', () => {
       path: '/events/v1/events?channel=channel&limit=10&clientId=test&secret=api_secret'
     });
 
+    console.log(client.api.get.toString());
     td.replace(client.api, 'get', td.function());
 
     td.when(client.api.get(validPath, td.callback))
-      .thenCallback(null, {}, {}, { ok: true });
+      .thenCallback(null, { ok: true });
 
     client.getEvents(cursor, (err, events) => {
       expect(err).to.be.null;
@@ -56,7 +57,7 @@ describe('EventsClient', () => {
       td.replace(client.api, 'post', td.function());
 
       td.when(client.api.post(expectedPath, expectedBody, td.callback))
-        .thenCallback(null, {}, {}, reply);
+        .thenCallback(null, reply);
 
       client.sendEvent(channel, { from, type, data }, (err, header) => {
         expect(err).to.be.null;
@@ -77,7 +78,7 @@ describe('EventsClient', () => {
       td.replace(client.api, 'post', td.function());
 
       td.when(client.api.post(expectedOptions, td.matchers.isA(Object), td.callback))
-        .thenCallback(null, {}, {}, reply);
+        .thenCallback(null, reply);
 
       client.sendEvent(channel, event, (err, header) => {
         expect(err).to.be.null;

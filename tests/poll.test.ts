@@ -12,7 +12,7 @@ describe('poll', () => {
   const CHANNEL = 'channel';
   const MESSAGE = 'message';
   const POLL_TIMEOUT: number = 321;
-  const TIMEOUT_ID = 1;
+  const TIMEOUT_ID: number = 1;
   let callback: (e?: Error | null, d?: any) => void;
   let log: Logger;
   let poll: Poll;
@@ -79,7 +79,7 @@ describe('poll', () => {
           setImmediate(() => cb(MESSAGE));
         });
       when(setTimeout(isA(Function), isA(Number)))
-        .thenReturn(TIMEOUT_ID);
+        .thenReturn(TIMEOUT_ID as Partial<NodeJS.Timeout>);
       poll.listen(CHANNEL, callback);
       setImmediate(() => {
         verify(callback(null, MESSAGE));

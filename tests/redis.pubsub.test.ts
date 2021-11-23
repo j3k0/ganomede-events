@@ -18,7 +18,7 @@ describe('redis.pubsub', function () {
   let pubsub: PubSub;
   let redisPubClient: RedisClient;
   let redisSubClient: RedisClient;
-  let callback: (e: Error | null) => void;
+  let callback;//: (e: Error | null) => void;
   let handler: (message: string) => void;
 
   const OK_CHANNEL = 'ok-channel';
@@ -28,19 +28,19 @@ describe('redis.pubsub', function () {
   beforeEach(() => {
 
     handler = td.function('handler') as (message: string) => void;
-    callback = td.function('callback') as (e: Error | null) => void;
+    callback = td.function('callback');// as (e: Error | null) => void;
 
     redisPubClient = td.object(['publish']) as RedisClient;
     when(redisPubClient.publish(OK_CHANNEL, anything()))
-      .thenCallback(null);
+      .thenCallback(null, null);
     when(redisPubClient.publish(FAIL_CHANNEL, anything()))
-      .thenCallback(new Error('publish failed'));
+      .thenCallback(new Error('publish failed'), null);
 
     redisSubClient = td.object(['subscribe', 'on']) as RedisClient;
     when(redisSubClient.subscribe(OK_CHANNEL))
-      .thenCallback(null);
+      .thenCallback(null, null);
     when(redisSubClient.subscribe(FAIL_CHANNEL))
-      .thenCallback(new Error('subscribe failed'));
+      .thenCallback(new Error('subscribe failed'), null);
 
     pubsub = new PubSub(
       redisPubClient,
@@ -52,17 +52,17 @@ describe('redis.pubsub', function () {
 
     it('succeeds when message is a string', () => {
       pubsub.publish(OK_CHANNEL, 'abc', callback);
-      verify(callback(null));
+      verify(callback(null, null));
     });
 
     it('succeeds when message is a buffer', () => {
       pubsub.publish(OK_CHANNEL, Buffer.from([]), callback);
-      verify(callback(null));
+      verify(callback(null, null));
     });
 
     it('succeeds when message is a number', () => {
       pubsub.publish(OK_CHANNEL, 0, callback);
-      verify(callback(null));
+      verify(callback(null, null));
     });
 
     it('fails when message is not a valid type', () => {
@@ -73,12 +73,12 @@ describe('redis.pubsub', function () {
     it('sends message to channel', () => {
       pubsub.publish(OK_CHANNEL, OK_MESSAGE, callback);
       verify(redisPubClient.publish(OK_CHANNEL, OK_MESSAGE, td.callback));
-      verify(callback(null));
+      verify(callback(null, null));
     });
 
     it('fails when redisPubClient fails', () => {
       pubsub.publish(FAIL_CHANNEL, OK_MESSAGE, callback);
-      verify(callback(isA(Error)));
+      verify(callback(isA(Error), null));
     });
 
   });
@@ -92,12 +92,12 @@ describe('redis.pubsub', function () {
 
     it('succeeds when handler is a function', () => {
       pubsub.subscribe(OK_CHANNEL, handler, callback);
-      verify(callback(null));
+      verify(callback(null, null));
     });
 
     it('fails when redisSubClient fails', () => {
       pubsub.subscribe(FAIL_CHANNEL, handler, callback);
-      verify(callback(isA(Error)));
+      verify(callback(isA(Error), null));
     });
   });
 
@@ -129,10 +129,10 @@ describe('redis.pubsub', function () {
     it('notify subscribers on publish', testableWhen(hasPubSub, (done) => {
 
       when(redisPubClient?.publish(anything(), anything()))
-        .thenCallback(null);
+        .thenCallback(null, null);
 
       when(redisSubClient?.subscribe(anything()))
-        .thenCallback(null);
+        .thenCallback(null, null);
 
 
       // Create 4 subscribers

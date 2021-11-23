@@ -26,7 +26,7 @@ describe('Middlewares', () => {
   });
 
   describe('requireAuth()', () => {
-    const authdbClient = td.object<IauthdbClient>(null as any);// td.object(['getAccount']);
+    const authdbClient = td.object<IauthdbClient>();// td.object(['getAccount']);
     const mw = requireAuth({ authdbClient, secret: '42' });
 
     it('token is valid', (done) => {

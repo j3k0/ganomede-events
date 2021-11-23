@@ -43,7 +43,7 @@ describe('events.middleware.get', () => {
   //  - loading fails with a InternalServerError
   testChannels[FAILING_LOAD_CHANNEL] = () => {
     when(store.loadEvents(FAILING_LOAD_CHANNEL, anything(), td.callback))
-      .thenCallback(new InternalServerError());
+      .thenCallback(new InternalServerError(), null);
   };
 
   // FAILING_POLL_CHANNEL:
@@ -53,7 +53,7 @@ describe('events.middleware.get', () => {
     when(store.loadEvents(FAILING_POLL_CHANNEL, anything(), td.callback))
       .thenCallback(null, []);
     when(poll.listen(FAILING_POLL_CHANNEL, td.callback))
-      .thenCallback(new Error('poll.listen failed'));
+      .thenCallback(new Error('poll.listen failed'), null);
   };
 
   // EMPTY_CHANNEL:
@@ -88,11 +88,11 @@ describe('events.middleware.get', () => {
 
     store = td.object(['loadEvents']) as EventsStore;
     when(store.loadEvents(anything(), anything(), td.callback))
-      .thenCallback(new Error('unexpected store.loadEvents'));
+      .thenCallback(new Error('unexpected store.loadEvents'), null);
 
     poll = td.object(['listen']) as Poll;
     when(poll.listen(anything(), anything()))
-      .thenCallback(new Error('unexpected poll.listen'));
+      .thenCallback(new Error('unexpected poll.listen'), null);
 
     log = td.object(['error']) as Logger;
 

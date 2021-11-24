@@ -1,5 +1,5 @@
 import { Request, Response, Next as NextFunction } from 'restify';
-import { InvalidContentError} from 'restify-errors';
+import { InvalidContentError } from 'restify-errors';
 import { parsePostParams } from './parse-http-params';
 
 import { Poll } from './poll';

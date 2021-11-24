@@ -128,7 +128,7 @@ describe('events.latest.get', () => {
       .get(url)
       .query({ channel: SUCCESS_CHANNEL, limit: 1, secret: process.env.API_SECRET })
       .end((err, res) => {
-        expect(res.body).to.eql([{id:2,from:"from2",type:"type3",data:{m:1,x:9}}]);
+        expect(res.body).to.eql([{ id: 2, from: "from2", type: "type3", data: { m: 1, x: 9 } }]);
         expect(err).to.be.null;
         expect(res.status).to.equal(200);
         done();

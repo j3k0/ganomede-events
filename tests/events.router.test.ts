@@ -7,8 +7,8 @@ import { RedisClient } from 'redis';
 import { createEventsRouter } from '../src/events.router';
 import { config } from '../config';
 
-interface ErrorWithOrigin extends Error{
-  origin: {message: string}
+interface ErrorWithOrigin extends Error {
+  origin: { message: string }
 }
 
 (() => {

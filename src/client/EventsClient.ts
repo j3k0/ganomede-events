@@ -1,5 +1,16 @@
 import { Cursor } from './Cursor';
-import { BaseClient} from 'ganomede-base-client'; 
+import { JsonClient } from 'restify-clients';
+import BaseClient from 'ganomede-base-client';
+
+
+// export declare module GanomedeBaseClient{
+//   class BaseClient {
+//      api: JsonClient;
+//      apiCall: (parameters: any, callback)=>void;
+
+//      constructor(baseUrl: string, optionsOverwrites?: any);
+//  }
+// }
 
 export class EventsClient extends BaseClient {
 
@@ -29,7 +40,6 @@ export class EventsClient extends BaseClient {
       clientId: this.clientId,
       secret: this.secret
     });
-    console.log("getevents:", qs, callback);
     super.apiCall({ method: 'get', path: '/events', qs }, callback);
   }
 

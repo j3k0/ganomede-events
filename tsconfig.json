@@ -1,8 +1,11 @@
 {
-  "include": ["src/**/*", "tests/**/*"],
+  "include": [
+    "src/**/*",
+    "tests/**/*"
+  ],
   "ts-node": {
     "files": true
-   },
+  },
   "compilerOptions": {
     "allowJs": true,
     "outDir": "build",
@@ -24,10 +27,15 @@
       "es2019"
     ],
     "target": "es2019",
-    "typeRoots":  ["./@types", "node_modules/@types"],
+    "typeRoots": [
+      // "./@types",
+      "node_modules/@types"
+    ],
     "paths": {
-      "ganomede-base-client": ["./@types/ganomede-base-client"]
+      // "ganomede-base-client": ["./@types/ganomede-base-client"]
     }
-  }, 
-  "exclude": ["./@types/**"], 
+  },
+  "exclude": [
+    "./@types/**"
+  ],
 }

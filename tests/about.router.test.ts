@@ -11,7 +11,7 @@ const about = createAbout;
 describe('about-router', () => {
   const server = createServer();
 
-  before(done => {
+  before( (done) => {
     about(config.http.prefix, server);
     server.listen(done);
   });

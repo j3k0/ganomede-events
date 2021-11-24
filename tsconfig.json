@@ -1,9 +1,12 @@
 {
   "include": ["src/**/*", "tests/**/*"],
+  "ts-node": {
+    "files": true
+   },
   "compilerOptions": {
     "allowJs": true,
     "outDir": "build",
-    "declaration": false,
+    "declaration": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "rootDir": ".",
@@ -20,6 +23,11 @@
     "lib": [
       "es2019"
     ],
-    "target": "es2019"
-  }
+    "target": "es2019",
+    "typeRoots":  ["./@types", "node_modules/@types"],
+    "paths": {
+      "ganomede-base-client": ["./@types/ganomede-base-client"]
+    }
+  }, 
+  "exclude": ["./@types/**"], 
 }

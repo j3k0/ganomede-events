@@ -1,6 +1,5 @@
-
-import BaseClient from 'ganomede-base-client';
 import { Cursor } from './Cursor';
+import { BaseClient} from 'ganomede-base-client'; 
 
 export class EventsClient extends BaseClient {
 

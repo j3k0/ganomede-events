@@ -32,6 +32,10 @@ export class EventsStore {
     ], callback);
   }
 
+  getEventsByIds(channel: string, indexes: number[], callback: (e?: Error | null, results?: any|null) =>  void){
+    this.items.getItemByIndexes(channel, indexes, callback);
+  }
+
   _load(channel: string, after: number | undefined, limit: number | undefined, callback: (e: Error | null | undefined, res?: any) => void) {
     // Try updating last fetched index.
 

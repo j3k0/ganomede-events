@@ -30,6 +30,8 @@ export class IndexerStreamProcessor {
   processEvents(indexDefinition: IndexDefinition, cb: (e: Error | null, results: any | null) => void) {
     let params = parseGetParams({ channel: indexDefinition.channel, clientId: indexDefinition.id });
     pollForEvents(this.store, this.poll, params, (err: Error | DefinedHttpError | null, events?: any) => {
+
+
       if (err) {
         this.log.error(err, 'processEvents.pollForEvents failed');
         return cb(err, null);

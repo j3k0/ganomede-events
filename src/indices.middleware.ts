@@ -15,7 +15,6 @@ import { InvalidContentError, DefinedHttpError } from 'restify-errors';
 
 import { logger } from './logger';
 import bunyan from 'bunyan';
-import { Poll } from './poll';
 import { EventsStore } from './events.store';
 import { GetIndicesEventsParam, parseIndicesGetParams, parseIndicesPostParams } from './parse-http-params';
 import { IndexerStorage } from './indexer/indexerSorage';
@@ -24,9 +23,10 @@ import { IndexerStreamProcessor } from './indexer/IndexerStreamProcessor';
 import async from 'async';
 import { IndexDefinition } from './models/IndexDefinition';
 
-export const createGetMiddleware = (poll: Poll, store: EventsStore, indexerStorage: IndexerStorage,
+export const createGetMiddleware = (store: EventsStore, indexerStorage: IndexerStorage,
   indexerProcessor: IndexerStreamProcessor,
   log: bunyan = logger) => (req: Request, res: Response, next: NextFunction) => {
+
 
     let params = parseIndicesGetParams(req.params);
     if (params instanceof Error)
@@ -52,8 +52,10 @@ export const createGetMiddleware = (poll: Poll, store: EventsStore, indexerStora
     };
 
     // we have now the events ids, so calling the store to get the list of events based ont their event-ids
-    const fetchEventsFromStore = (indexDef: IndexDefinition, eventIds: number[], cb: (e?: Error | null, res?: any[] | null) => void) => {
-      store.getEventsByIds(indexDef.channel, eventIds, cb);
+    const fetchEventsFromStore = (indexDef: IndexDefinition, eventIds: number[], cb) => {
+      store.getEventsByIds(indexDef.channel, eventIds, (er?: Error | null, res?: any) => {
+        cb(er, indexDef, res);
+      });
     };
 
     //prepare the last response to return to the client.
@@ -66,7 +68,6 @@ export const createGetMiddleware = (poll: Poll, store: EventsStore, indexerStora
       }
       cb(null, response);
     }
-
     //work all the previous methods in a series and get the result from previous to the next one..
     async.waterfall([
       getIndexDefinition,
@@ -86,15 +87,14 @@ export const createGetMiddleware = (poll: Poll, store: EventsStore, indexerStora
     });
   };
 
-export const createPostMiddleware = (store: EventsStore, indexerStorage: IndexerStorage,
+export const createPostMiddleware = (indexerStorage: IndexerStorage,
   log: bunyan = logger) => (req: Request, res: Response, next: NextFunction) => {
-
-    let params = parseIndicesPostParams(req.params);
+    let params = parseIndicesPostParams(req.body);
     if (params instanceof Error)
       return next(new InvalidContentError(params.message));
 
     //calling indexerStorage to create an index.
-    indexerStorage.createIndex(params, (e: Error | null, results: any[] | null | undefined) => {
+    indexerStorage.createIndex(params, (e: Error | null, results?: string) => {
       if (e) {
         log.error(e, 'indexerStorage.createIndex failed');
         return next(e);

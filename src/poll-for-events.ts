@@ -12,6 +12,7 @@ export const pollForEvents = (store: EventsStore, poll: Poll, params: any, callb
   const loadEvents = (cb: (e: Error | null | undefined, res?: any) => void) =>
     store.loadEvents(channel, _loadEventsparams, cb);
 
+
   // Process the outcome of store.loadEvents,
   // returns true iff the middleware's job is over (next was called).
   const processLoad = (err: Error | null | undefined, events: [], minimalEventsCount = 0) => {
@@ -46,6 +47,7 @@ export const pollForEvents = (store: EventsStore, poll: Poll, params: any, callb
 
   const pollEvents = () => poll.listen(channel, processPoll);
 
-  loadEvents((err: Error | null | undefined, events: []) =>
-    (processLoad(err, events, 1) || pollEvents()));
+  loadEvents((err: Error | null | undefined, events: []) => {
+    (processLoad(err, events, 1) || pollEvents())
+  });
 };

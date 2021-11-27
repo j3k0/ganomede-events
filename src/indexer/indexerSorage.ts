@@ -16,18 +16,16 @@ export class IndexerStorage {
   }
 
   // create index in redis
-  createIndex(item: IndexDefinition, callback: (e: Error | null, res?: any[] | null) => void) {
-    this.redis.multi()
-      .set(this.indexName(INDICES_KEYS, item.id), JSON.stringify(item), 'NX')
-      .exec((err, results) => {
-        if (err)
-          return callback(err);
+  createIndex(item: IndexDefinition, callback: (e: Error | null, res?: string) => void) {
+    this.redis.set(this.indexName(INDICES_KEYS, item.id), JSON.stringify(item), 'NX', (err, results) => {
+      if (err)
+        return callback(err);
 
-        if (results[0] === null)
-          return callback(new Error('Key already exists'), results);
+      if (results[0] === null)
+        return callback(new Error('Key already exists'), results);
 
-        callback(null, results);
-      });
+      callback(null, results);
+    });
   }
 
   //we need to get the definition of the index stored by its id.
@@ -44,19 +42,16 @@ export class IndexerStorage {
   }
 
   // Add the event to the index.
-  addToIndex(item: IndexDefinition, event: any, value: string, callback: (e: Error | null, res?: any[] | null) => void) {
+  addToIndex(item: IndexDefinition, event: any, value: string, callback: (e: Error | null, res?: number) => void) {
+    this.redis.lpush(this.indexName(this.indexPrefix, item.id, value), String(event.id), (err, results) => {
+      if (err)
+        return callback(err);
 
-    this.redis.multi()
-      .lpush(this.indexName(this.indexPrefix, item.id, value), event.id)
-      .exec((err, results) => {
-        if (err)
-          return callback(err);
+      if (results[0] === null)
+        return callback(new Error('Item already exists'), results);
 
-        if (results[0] === null)
-          return callback(new Error('Item already exists'), results);
-
-        callback(null, results);
-      });
+      callback(null, results);
+    });
   }
 
   // Return the list of event ids
@@ -65,9 +60,10 @@ export class IndexerStorage {
       if (err)
         return callback(err);
 
+
       let items: number[] = [];
       try {
-        items = results.map(parseInt);
+        items = results.map((num) => { return parseInt(num, 10); });
       } catch (e) { }
       callback(err, items);
     });

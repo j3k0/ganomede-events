@@ -65,6 +65,7 @@ export class RedisStore implements IRedisStore {
         : callback(null, []);
     };
 
+
     async.waterfall([
       retrieveKeys,
       pullAllItems
@@ -77,7 +78,6 @@ export class RedisStore implements IRedisStore {
   }
 
   getItemByIndexes(channel: string, indexes: number[], callback: (e?: Error | null, results?: any) => void) {
-
     const retriveOneKey = (index, cb) => {
       this.redis.zrangebyscore(key(channel, KEYS), index, index, cb);
     };
@@ -100,9 +100,10 @@ export class RedisStore implements IRedisStore {
   }
 
   loadItems(channel: string, start: number | undefined, limit: number, callback: (e: Error | null | undefined, res?: any) => void): void {
-    const retrieveKeys = (callback: (e: Error | null | undefined, res?: any) => void) =>
+    const retrieveKeys = (callback: (e: Error | null | undefined, res?: any) => void) => {
       this.redis.zrangebyscore(key(channel, KEYS),
         addOne(start), '+inf', 'LIMIT', 0, limit, callback);
+    }
 
     this._loadItems(callback, retrieveKeys);
   }

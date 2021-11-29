@@ -9,7 +9,7 @@
     "start": "node -r source-map-support/register build/src/index.js",
     "startw": "nodemon --exec \"npm start\" --watch build",
     "test": "API_SECRET=1 npx mocha --colors --require ts-node/register --extensions ts tests/*.test.ts tests/**/*.test.ts | bunyan -l error -o short --color",
-    "testw": "nodemon --watch src/ --watch tests/ --watch config.js --exec \"npm test\"",
+    "testw": "nodemon --ext ts --watch src/ --watch tests/ --watch config.ts --exec \"npm test\"",
     "coverage": "LOG_LEVEL=FATAL API_SECRET=12345678 istanbul cover _mocha -- -b tests/helper.js tests/**/*.test.js && istanbul report",
     "lint": "eslint src/ tests/ --ext .ts",
     "snyk-protect": "snyk protect",

@@ -27,13 +27,13 @@ export class EventsClient extends BaseClient {
   }
 
 
-  // public set api(value: any) {
-  //   super.apiCall = value;
-  // }
+  public set api(value: any) {
+    super.api = value;
+  }
 
-  // public get api(): any {
-  //   return super.apiCall;
-  // }
+  public get api(): any {
+    return super.api;
+  }
 
   getEvents(cursor: Cursor, callback: (err: Error, events: []) => void) {
     const qs = Object.assign(cursor.toQuery(), {

@@ -77,23 +77,10 @@ export class RedisStore implements IRedisStore {
     });
   }
 
-  getItemByIndexes(channel: string, indexes: number[], callback: (e?: Error | null, results?: any) => void) {
-    const retriveOneKey = (index, cb) => {
-      this.redis.zrangebyscore(key(channel, KEYS), index, index, cb);
-    };
-
+  getItemsByIds(channel: string, ids: string[], callback: (e?: Error | null, results?: any) => void) {
     const retrieveKeys = (cb: (e: Error | null | undefined, res?: any | null) => void) => {
-      let tasks: any[] = [];
-      indexes.forEach(index => {
-        tasks.push(callack => retriveOneKey(index, callack));
-      });
-
-      async.series(tasks, (err, data) => {
-        if (err) {
-          return cb(err, null);
-        }
-        cb(null, data);
-      });
+      let eventKeys = ids.map((id) => { return key(channel, id); });
+      cb(null, eventKeys);
     };
 
     this._loadItems(callback, retrieveKeys);

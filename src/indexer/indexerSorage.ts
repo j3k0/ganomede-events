@@ -1,7 +1,17 @@
+/**
+ * Indexer Storage class: used to store the indexes created based on channel, and field
+ * ex: { "id": "blocked-users-by-username", "channel": "users/v1/blocked-users", "field": "data.username"}
+ * in redis we will store 2 things:
+ * - "indices:id-of-the-index-definition" like "indices:blocked-users-by-username"
+ *    => this one will contains the index definition as json string
+ * - "index:id-of-the-index-definition:value-Of-field" like "index:blocked-users-by-username:user1"
+ *    => this one will contains the event-ids for all the events that having for example "data.username"=user1
+ * That's why later, we can retreive the events for a specific index like group-by feature.
+ */
 import { RedisClient } from "redis";
 import { IndexDefinition } from "../models/IndexDefinition";
 
-const INDICES_KEYS: string = 'all-indices';
+const INDICES_KEYS: string = 'indices';
 
 export class IndexerStorage {
 
@@ -55,17 +65,12 @@ export class IndexerStorage {
   }
 
   // Return the list of event ids
-  getEventIds(indexId: string, value: string, callback: (e: Error | null, res?: number[] | null) => void) {
+  getEventIds(indexId: string, value: string, callback: (e: Error | null, res?: string[] | null) => void) {
     this.redis.lrange(this.indexName(this.indexPrefix, indexId, value), 0, -1, (err: Error | null, results: string[]) => {
       if (err)
         return callback(err);
 
-
-      let items: number[] = [];
-      try {
-        items = results.map((num) => { return parseInt(num, 10); });
-      } catch (e) { }
-      callback(err, items);
+      callback(err, results);
     });
   }
 

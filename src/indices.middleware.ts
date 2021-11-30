@@ -23,6 +23,25 @@ import { IndexerStreamProcessor } from './indexer/IndexerStreamProcessor';
 import async from 'async';
 import { IndexDefinition } from './models/IndexDefinition';
 
+/**
+* Get the list of events by an index (middleware):
+
+* This middleware will be validating the request params, then it should do the following in an ordered way:
+
+* 1- Get the index definition from redis by its key [getIndexDefinition]
+*    ex: "indices:blocked-users-by-username" => { "id": "blocked-users-by-username", "channel": "users/v1/blocked-users", "field": "data.username"}
+
+* 2- Process the events, get all events using PollForEvents which are not processed yet. [processEvents]
+*    Then store the event-ids in the index in redis.
+
+* 3- Then we need to fetch all event-ids from the index, [fetchEventIds]
+*    in order to prepare the result to response.
+
+* 4- Then from the event-ids we need to get the events array (actual events from redis.store) [fetchEventsFromStore]
+*    So using "getEventsByIds" from the store, we can get all events by using their ids.
+
+* 5- At last, [prepareLastResponse] preparing the last response to be sent to the requester.
+*/
 export const createGetMiddleware = (store: EventsStore, indexerStorage: IndexerStorage,
   indexerProcessor: IndexerStreamProcessor,
   log: bunyan = logger) => (req: Request, res: Response, next: NextFunction) => {
@@ -52,7 +71,7 @@ export const createGetMiddleware = (store: EventsStore, indexerStorage: IndexerS
     };
 
     // we have now the events ids, so calling the store to get the list of events based ont their event-ids
-    const fetchEventsFromStore = (indexDef: IndexDefinition, eventIds: number[], cb) => {
+    const fetchEventsFromStore = (indexDef: IndexDefinition, eventIds: string[], cb) => {
       store.getEventsByIds(indexDef.channel, eventIds, (er?: Error | null, res?: any) => {
         cb(er, indexDef, res);
       });
@@ -87,6 +106,16 @@ export const createGetMiddleware = (store: EventsStore, indexerStorage: IndexerS
     });
   };
 
+/**
+* Create an index in redis (middleware):
+
+* This middleware will be validating the request params (body), then it should create a dynamic index
+
+* in redis => from this { "id": "blocked-users-by-username", "channel": "users/v1/blocked-users", "field": "data.username"}
+
+* so Final result in redis will be:
+* "indices:blocked-users-by-username" => { "id": "blocked-users-by-username", "channel": "users/v1/blocked-users", "field": "data.username"}
+*/
 export const createPostMiddleware = (indexerStorage: IndexerStorage,
   log: bunyan = logger) => (req: Request, res: Response, next: NextFunction) => {
     let params = parseIndicesPostParams(req.body);

@@ -63,7 +63,7 @@ describe('events.indices check api', () => {
 
     let getUrl = [url, INDEX_ID, INDEX_VALUE].join('/');
 
-    td.when(redisClient?.get(`all-indices:${INDEX_ID}`, td.callback)).
+    td.when(redisClient?.get(`indices:${INDEX_ID}`, td.callback)).
       thenCallback(null, JSON.stringify(CREATE_INDEX_REQ_BODY));
 
     td.when(redisClient?.get(`last-fetched:${INDEX_ID}:${SOME_CHANNEL}`, td.callback)).
@@ -99,15 +99,6 @@ describe('events.indices check api', () => {
     td.when(redisClient?.lrange(`index:${INDEX_ID}:${INDEX_VALUE}`, td.matchers.anything(), td.matchers.anything(),
       td.callback)).thenCallback(null, ["1", "3"]);
 
-    td.when(redisClient?.zrangebyscore(`${SOME_CHANNEL}:keys`, 1, 1, td.callback))
-      .thenCallback(null, `${SOME_CHANNEL}:1`);
-
-    td.when(redisClient?.zrangebyscore(`${SOME_CHANNEL}:keys`, 2, 2, td.callback))
-      .thenCallback(null, `${SOME_CHANNEL}:2`);
-
-    td.when(redisClient?.zrangebyscore(`${SOME_CHANNEL}:keys`, 3, 3, td.callback))
-      .thenCallback(null, `${SOME_CHANNEL}:3`);
-
     td.when(redisClient?.mget([`${SOME_CHANNEL}:1`, `${SOME_CHANNEL}:3`], td.callback)).
       thenCallback(null, [
         JSON.stringify(EVENTS_ARRAY[0]),
@@ -133,7 +124,7 @@ describe('events.indices check api', () => {
     td.when(redisClient?.multi(td.callback as any))
       .thenCallback(null, ['OK']);
 
-    td.when(redisClient?.set(`all-indices:${INDEX_ID}`, td.matchers.anything(), td.matchers.anything(), td.callback)).
+    td.when(redisClient?.set(`indices:${INDEX_ID}`, td.matchers.anything(), td.matchers.anything(), td.callback)).
       thenCallback(null, "OK");
 
     supertest(server)

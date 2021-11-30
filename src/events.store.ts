@@ -5,7 +5,7 @@ import { RedisStore } from './redis.store';
 
 const lastFetchedKey = (clientId: string, channel: string) => `last-fetched:${clientId}:${channel}`;
 
-export type LoadEventsParamType = { clientId: string, after?: number, limit?: number, afterExplicitlySet?: any };
+export type LoadEventsParam = { clientId: string, after: number, limit?: number, afterExplicitlySet?: any };
 
 export class EventsStore {
   items: RedisStore;
@@ -32,8 +32,8 @@ export class EventsStore {
     ], callback);
   }
 
-  getEventsByIds(channel: string, indexes: number[], callback: (e?: Error | null, results?: any | null) => void) {
-    this.items.getItemByIndexes(channel, indexes, callback);
+  getEventsByIds(channel: string, eventIds: string[], callback: (e?: Error | null, results?: any | null) => void) {
+    this.items.getItemsByIds(channel, eventIds, callback);
   }
 
   _load(channel: string, after: number | undefined, limit: number | undefined, callback: (e: Error | null | undefined, res?: any) => void) {
@@ -53,7 +53,7 @@ export class EventsStore {
     this.items.loadLatestEvents(channel, limit, callback);
   }
 
-  loadEvents(channel: string, { clientId, after, limit, afterExplicitlySet }: LoadEventsParamType, callback: (e: Error | null | undefined, res?: any) => void) {
+  loadEvents(channel: string, { clientId, after, limit, afterExplicitlySet }: LoadEventsParam, callback: (e: Error | null | undefined, res?: any) => void) {
     if (afterExplicitlySet) {
       // In addition to loading items, treat this request as an ACK
       // that client processed all the messages with id up to `after`

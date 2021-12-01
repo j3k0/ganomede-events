@@ -37,6 +37,28 @@ describe('EventsClient', () => {
     });
   });
 
+  it('#getLatestEvents() request latest events', (done) => {
+    const client = createClient();
+    const validPath = td.matchers.contains({
+      path: '/events/v1/latest?channel=channel&limit=10&secret=api_secret'
+    });
+
+    td.replace(client.api, 'get', td.function());
+    //console.log((client as any).api.get.toString());
+
+    td.when(client.api.get(validPath, td.matchers.anything()))
+      .thenDo((path, cb: (e: Error | null, req, res, obj: any) => void) => {
+        cb(null, null, null, { ok: true });
+      });
+    //.thenCallback(null, { ok: true });
+
+    client.getLatestEvents('channel', 10, (err, events) => {
+      expect(err).to.be.null;
+      expect(events).to.eql({ ok: true });
+      done();
+    });
+  });
+
   describe('#post()', () => {
     const channel = 'some-channel-with-events';
     const from = 'service/v1';

@@ -52,4 +52,13 @@ export class EventsClient extends BaseClient {
 
     super.apiCall({ method: 'post', path: '/events', body }, callback);
   }
+
+  getLatestEvents(channel: string, limit: number = 100, callback: (err: Error, events: []) => void) {
+    const qs = Object.assign({
+      channel,
+      limit,
+      secret: this.secret
+    });
+    super.apiCall({ method: 'get', path: '/latest', qs }, callback);
+  }
 }

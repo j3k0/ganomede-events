@@ -9,6 +9,7 @@
  * That's why later, we can retreive the events for a specific index like group-by feature.
  */
 import { RedisClient } from "redis";
+import { Event } from "../events.store";
 import { IndexDefinition } from "../models/IndexDefinition";
 
 const INDICES_KEYS: string = 'indices';
@@ -52,7 +53,7 @@ export class IndexerStorage {
   }
 
   // Add the event to the index.
-  addToIndex(item: IndexDefinition, event: any, value: string, callback: (e: Error | null, res?: number) => void) {
+  addToIndex(item: IndexDefinition, event: Event, value: string, callback: (e: Error | null, res?: number) => void) {
     const indexName = this.indexName(this.indexPrefix, item.id, value);
     // To make sure the element isn't already in the index, we do some cleanup before inserting.
     // A better implementation could use `lpos` to look for the element before inserting, but this requires Redis 6.

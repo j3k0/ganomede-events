@@ -36,7 +36,7 @@ export class RedisStore implements IRedisStore {
     this.redis.set(key, String(idx), (err) => callback(err));
   }
 
-  nextIndex(channel: string, callback: (e: Error | null, event?: any) => void): void {
+  nextIndex(channel: string, callback: (e: Error | null, index?: number) => void): void {
     this.redis.incr(`${INDICES}:${channel}`, callback);
   }
 

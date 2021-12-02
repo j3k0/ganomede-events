@@ -1,3 +1,4 @@
+import { EventDefinition } from "./events.store";
 import { IndexDefinition } from "./models/IndexDefinition";
 
 const hasOwnProperty = (obj: {}, prop: string) => Object.hasOwnProperty.call(obj, prop);
@@ -82,7 +83,7 @@ export const parseGetParams = (params: GetEventsParam = { clientId: '', channel:
   } as ParsedGetEventsParam;
 };
 
-export const parsePostParams = (params: PostEventsParam = { clientId: '', channel: '', from: '', type: '', data: '' }): Error | { clientId: string, channel: string, event: any } => {
+export const parsePostParams = (params: PostEventsParam = { clientId: '', channel: '', from: '', type: '', data: '' }): Error | { clientId: string, channel: string, event: EventDefinition } => {
   const clientId = nonEmptyString(params.clientId);
   if (!clientId)
     return new Error('Invalid Client ID');
@@ -108,7 +109,7 @@ export const parsePostParams = (params: PostEventsParam = { clientId: '', channe
       return new Error('Invalid data');
   }
 
-  const event = hasData
+  const event: EventDefinition = hasData
     ? { type, from, data }
     : { type, from };
 

@@ -1,3 +1,6 @@
+import { EventDefinition } from "./events.store";
+import { IndexDefinition } from "./models/IndexDefinition";
+
 const hasOwnProperty = (obj: {}, prop: string) => Object.hasOwnProperty.call(obj, prop);
 
 const toInt = (something: any, defaultValue: number = NaN) => {
@@ -49,10 +52,14 @@ export type PostEventsParam = {
   data?: {};
 }
 
-
 export type LatestEventsParam = {
   channel: string;
   limit?: number;
+}
+
+export type GetIndicesEventsParam = {
+  indexId: string;
+  indexValue: string;
 }
 
 export const parseGetParams = (params: GetEventsParam = { clientId: '', channel: '' }): Error | ParsedGetEventsParam => {
@@ -76,7 +83,7 @@ export const parseGetParams = (params: GetEventsParam = { clientId: '', channel:
   } as ParsedGetEventsParam;
 };
 
-export const parsePostParams = (params: PostEventsParam = { clientId: '', channel: '', from: '', type: '', data: '' }): Error | { clientId: string, channel: string, event: any } => {
+export const parsePostParams = (params: PostEventsParam = { clientId: '', channel: '', from: '', type: '', data: '' }): Error | { clientId: string, channel: string, event: EventDefinition } => {
   const clientId = nonEmptyString(params.clientId);
   if (!clientId)
     return new Error('Invalid Client ID');
@@ -102,7 +109,7 @@ export const parsePostParams = (params: PostEventsParam = { clientId: '', channe
       return new Error('Invalid data');
   }
 
-  const event = hasData
+  const event: EventDefinition = hasData
     ? { type, from, data }
     : { type, from };
 
@@ -121,5 +128,40 @@ export const parseLatestGetParams = (params: LatestEventsParam = { channel: '', 
   return {
     channel,
     limit
+  };
+};
+
+
+export const parseIndicesPostParams = (params: IndexDefinition = { channel: '', id: '', field: '' }): Error | IndexDefinition => {
+  const id = nonEmptyString(params.id);
+  if (!id)
+    return new Error('Invalid index ID');
+
+  const channel = nonEmptyString(params.channel);
+  if (!channel)
+    return new Error('Invalid Channel');
+
+  const field = nonEmptyString(params.field);
+  if (!field)
+    return new Error('Invalid field');
+
+
+  return { id, channel, field };
+};
+
+export const parseIndicesGetParams = (params: GetIndicesEventsParam = { indexId: '', indexValue: '' }): Error | GetIndicesEventsParam => {
+
+  const indexId = nonEmptyString(params.indexId);
+  if (!indexId)
+    return new Error('Invalid Index id');
+
+  const indexValue = nonEmptyString(params.indexValue);
+  if (!indexValue)
+    return new Error('Invalid Index Value');
+
+
+  return {
+    indexId,
+    indexValue
   };
 };

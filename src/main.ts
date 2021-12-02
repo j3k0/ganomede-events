@@ -9,6 +9,7 @@ import { config } from '../config';
 import { createAbout } from './about.router';
 import { createEventsRouter } from './events.router';
 import { latest } from './latest.router';
+import { indicesRouter } from './indices.router';
 import { createPingRouter } from './ping.router';
 import { createServer } from './server';
 import { logger } from './logger';
@@ -51,6 +52,7 @@ const child = () => {
 
   const eventsRouter = createEventsRouter(config.http.prefix, server, redisClient);
   latest(config.http.prefix, server, redisClient);
+  indicesRouter(config.http.prefix, server, redisClient);
   createAbout(config.http.prefix, server);
   createPingRouter(config.http.prefix, server);
 

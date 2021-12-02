@@ -2,15 +2,22 @@
 import { InternalServerError, DefinedHttpError } from 'restify-errors';
 import { EventsStore } from './events.store';
 import { Poll } from './poll';
-import { LoadEventsParamType } from './events.store';
+import { LoadEventsParam } from './events.store';
 
-export const pollForEvents = (store: EventsStore, poll: Poll, params: any, callback: (err: Error | null | DefinedHttpError, res?: any) => void) => {
+export type PollEventsParams = LoadEventsParam & {
+  channel: string;
+}
+
+export type EventsPoller = (store: EventsStore, poll: Poll, params: PollEventsParams, callback: (err: Error | null | DefinedHttpError, res?: any) => void) => void;
+
+export const pollForEvents: EventsPoller = (store: EventsStore, poll: Poll, params: PollEventsParams, callback: (err: Error | null | DefinedHttpError, res?: any) => void) => {
   const { after, channel } = params;
 
-  const _loadEventsparams: LoadEventsParamType = params;
+  const loadEventsParams: LoadEventsParam = params;
 
   const loadEvents = (cb: (e: Error | null | undefined, res?: any) => void) =>
-    store.loadEvents(channel, _loadEventsparams, cb);
+    store.loadEvents(channel, loadEventsParams, cb);
+
 
   // Process the outcome of store.loadEvents,
   // returns true iff the middleware's job is over (next was called).
@@ -46,6 +53,7 @@ export const pollForEvents = (store: EventsStore, poll: Poll, params: any, callb
 
   const pollEvents = () => poll.listen(channel, processPoll);
 
-  loadEvents((err: Error | null | undefined, events: []) =>
-    (processLoad(err, events, 1) || pollEvents()));
+  loadEvents((err: Error | null | undefined, events: []) => {
+    (processLoad(err, events, 1) || pollEvents())
+  });
 };

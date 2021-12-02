@@ -53,15 +53,19 @@ export class IndexerStorage {
 
   // Add the event to the index.
   addToIndex(item: IndexDefinition, event: any, value: string, callback: (e: Error | null, res?: number) => void) {
-    this.redis.lpush(this.indexName(this.indexPrefix, item.id, value), String(event.id), (err, results) => {
-      if (err)
-        return callback(err);
-
-      if (results[0] === null)
-        return callback(new Error('Item already exists'), results);
-
-      callback(null, results);
-    });
+    const indexName = this.indexName(this.indexPrefix, item.id, value);
+    // To make sure the element isn't already in the index, we do some cleanup before inserting.
+    // A better implementation could use `lpos` to look for the element before inserting, but this requires Redis 6.
+    // (At the moment, we still use Redis 4 in production).
+    this.redis.multi()
+      .lrem(indexName, 0, String(event.id))
+      .lpush(indexName, String(event.id))
+      .exec((err, resultsArray) => {
+        if (err) {
+          return callback(err);
+        }
+        callback(null, resultsArray[1]);
+      });
   }
 
   // Return the list of event ids

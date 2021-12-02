@@ -5,7 +5,7 @@ import { createServer } from '../src/server';
 import { config } from '../config';
 import { indicesRouter } from '../src/indices.router';
 import { parseLatestGetParams } from '../src/parse-http-params';
-import { RedisClient } from 'redis';
+import { Multi, RedisClient } from 'redis';
 import { Server } from 'restify';
 import td from 'testdouble';
 import { EventsStore } from '../src/events.store';
@@ -29,21 +29,21 @@ const EVENTS_ARRAY = [
 
 describe('events.indices check api', () => {
 
-  let server: Server | null = null;
-  let store: EventsStore | null;
-  let rediSstore: RedisStore | null;
-  let redisClient: RedisClient | null;
+  let server: Server | undefined;
+  let store: EventsStore | undefined;
+  let redisStore: RedisStore | undefined;
+  let redisClient: RedisClient | undefined;
+  let redisMulti: Multi | undefined;
 
   beforeEach(done => {
 
-    redisClient = td.object(['zrange', 'mget', 'duplicate', 'on', 'get', 'set',
-      'zrangebyscore', 'mget', 'multi', 'lpush', 'lrange']) as RedisClient;
-    rediSstore = new RedisStore(redisClient);
-    store = new EventsStore(rediSstore);
+    redisClient = td.object<RedisClient>();
+    redisStore = new RedisStore(redisClient);
+    store = new EventsStore(redisStore);
+    redisMulti = td.object<Multi>()
 
-    let rediPubSubClient: RedisClient = td.object(['zrange', 'mget', 'duplicate', 'on']) as RedisClient;
-
-    td.when(redisClient.duplicate()).thenReturn(rediPubSubClient);
+    td.when(redisClient.multi()).thenReturn(redisMulti);
+    td.when(redisClient.duplicate()).thenReturn(td.object<RedisClient>());
 
     server = createServer();
     indicesRouter(config.http.prefix, server, redisClient, store);
@@ -53,7 +53,7 @@ describe('events.indices check api', () => {
   afterEach(done => {
     // redisClient.quit();
     server!.close(done);
-    store = redisClient = rediSstore = null;
+    store = redisClient = redisStore = redisMulti = undefined;
   });
 
   it(`expects to return 2 events out of 3 for the value '${INDEX_VALUE}'`, (done: Mocha.Done) => {
@@ -79,17 +79,15 @@ describe('events.indices check api', () => {
         JSON.stringify(EVENTS_ARRAY[2])
       ]);
 
-    td.when(redisClient?.multi(td.callback as any))
-      .thenCallback(null, ['OK']);
+    // td.when(redisClient?.multi(td.callback as any))
+      // .thenCallback(null, ['OK']);
 
-    td.when(redisClient?.lpush(`index:${INDEX_ID}:value-OfIndex`, String(1), td.callback)).
-      thenCallback(null, 1);
-
-    td.when(redisClient?.lpush(`index:${INDEX_ID}:value-OfIndex2`, String(2), td.callback)).
-      thenCallback(null, 2);
-
-    td.when(redisClient?.lpush(`index:${INDEX_ID}:value-OfIndex`, String(3), td.callback)).
-      thenCallback(null, 3);
+    td.when(redisMulti?.lrem(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()))
+      .thenReturn(redisMulti);
+    td.when(redisMulti?.lpush(td.matchers.anything(), td.matchers.anything())).
+      thenReturn(redisMulti);
+    td.when(redisMulti?.exec(td.callback)).
+      thenCallback(null, [0, 1]);
 
     td.when(redisClient?.lrange(`index:${INDEX_ID}:${INDEX_VALUE}`, td.matchers.anything(), td.matchers.anything(),
       td.callback)).thenCallback(null, ["1", "3"]);

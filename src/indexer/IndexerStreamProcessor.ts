@@ -9,7 +9,7 @@
 import { EventsStore } from "../events.store";
 import { Poll } from "../poll";
 import { IndexerStorage } from "./indexerSorage";
-import { PollEventsParams, pollForEvents } from '../poll-for-events';
+import { EventsPoller, PollEventsParams, pollForEvents as defaultPollForEvents } from '../poll-for-events';
 import { IndexDefinition } from "../models/IndexDefinition";
 import { DefinedHttpError, InternalServerError } from "restify-errors";
 import bunyan from "bunyan";
@@ -24,13 +24,16 @@ export class IndexerStreamProcessor {
   store: EventsStore;
   indexerStorage: IndexerStorage;
   log: bunyan;
+  pollForEvents: EventsPoller;
+  pollingLimit: number;
 
-
-  constructor(poll: Poll, store: EventsStore, indexerStorage: IndexerStorage, log: bunyan = logger) {
+  constructor(poll: Poll, store: EventsStore, indexerStorage: IndexerStorage, log: bunyan = logger, pollForEvents: EventsPoller = defaultPollForEvents) {
     this.poll = poll;
     this.store = store;
     this.indexerStorage = indexerStorage;
     this.log = log;
+    this.pollForEvents = pollForEvents;
+    this.pollingLimit = 100000;
   }
 
   //process last fetched events, and add them to storageIndexer
@@ -47,11 +50,11 @@ export class IndexerStreamProcessor {
       channel: indexDefinition.channel,
       clientId: indexDefinition.id,
       after: 0,
-      limit: 100000,
+      limit: this.pollingLimit,
       afterExplicitlySet: false
     };
 
-    pollForEvents(this.store, this.poll, params, (err: Error | DefinedHttpError | null, events?: any) => {
+    this.pollForEvents(this.store, this.poll, params, (err: Error | DefinedHttpError | null, events?: any) => {
 
       if (err) {
         this.log.error(err, 'processEvents.pollForEvents failed');

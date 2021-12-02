@@ -78,9 +78,7 @@ export class IndexerStreamProcessor {
           cb(err, null);
         }
         else if (events.length === params.limit) {
-          cb(new InternalServerError({
-            message: 'Too many unprocessed events, please repeat the request.'
-          }), null);
+          cb(new InternalServerError('Too many unprocessed events, please repeat the request.'), null);
         }
         else {
           cb(null, data);

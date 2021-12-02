@@ -11,10 +11,10 @@ export type PollEventsParams = LoadEventsParam & {
 export const pollForEvents = (store: EventsStore, poll: Poll, params: PollEventsParams, callback: (err: Error | null | DefinedHttpError, res?: any) => void) => {
   const { after, channel } = params;
 
-  const _loadEventsparams: LoadEventsParam = params;
+  const loadEventsParams: LoadEventsParam = params;
 
   const loadEvents = (cb: (e: Error | null | undefined, res?: any) => void) =>
-    store.loadEvents(channel, _loadEventsparams, cb);
+    store.loadEvents(channel, loadEventsParams, cb);
 
 
   // Process the outcome of store.loadEvents,

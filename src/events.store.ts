@@ -5,7 +5,12 @@ import { RedisStore } from './redis.store';
 
 const lastFetchedKey = (clientId: string, channel: string) => `last-fetched:${clientId}:${channel}`;
 
-export type LoadEventsParam = { clientId: string, after: number, limit?: number, afterExplicitlySet?: any };
+export type LoadEventsParam = {
+  clientId: string,
+  after: number,
+  limit?: number,
+  afterExplicitlySet?: any
+};
 
 export class EventsStore {
   items: RedisStore;

@@ -56,7 +56,7 @@ export class IndexerStreamProcessor {
       events.forEach(event => {
 
         let value = lodash.get(event, indexDefinition.field, undefined);
-        if (value != null && value != undefined && typeof value == "string") {
+        if (value !== null && value !== undefined && typeof value === "string") {
           tasks.push(cb2 => that.indexerStorage.addToIndex(indexDefinition, event, value, cb2));
         }
       });

@@ -1,8 +1,8 @@
 import { Event, EventsStore } from '../../src/events.store';
-import { IndexerStreamProcessor } from '../../src/indexer/IndexerStreamProcessor';
+import { IndexerStreamProcessor } from '../../src/indexer/indexer-stream-processor';
 import td from 'testdouble';
 import { Poll } from '../../src/poll';
-import { IndexerStorage } from '../../src/indexer/indexerSorage';
+import { IndexerStorage } from '../../src/indexer/indexer-storage';
 import Logger from 'bunyan';
 import { expect } from 'chai';
 import { EventsPoller, PollEventsParams } from '../../src/poll-for-events';

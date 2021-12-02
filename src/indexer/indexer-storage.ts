@@ -10,7 +10,7 @@
  */
 import { RedisClient } from "redis";
 import { Event } from "../events.store";
-import { IndexDefinition } from "../models/IndexDefinition";
+import { IndexDefinition } from "../models/index-definition";
 
 const INDICES_KEYS: string = 'indices';
 

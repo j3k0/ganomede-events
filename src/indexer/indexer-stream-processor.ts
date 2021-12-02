@@ -8,9 +8,9 @@
 
 import { EventsStore } from "../events.store";
 import { Poll } from "../poll";
-import { IndexerStorage } from "./indexerSorage";
+import { IndexerStorage } from "./indexer-storage";
 import { EventsPoller, PollEventsParams, pollForEvents as defaultPollForEvents } from '../poll-for-events';
-import { IndexDefinition } from "../models/IndexDefinition";
+import { IndexDefinition } from "../models/index-definition";
 import { DefinedHttpError, InternalServerError } from "restify-errors";
 import bunyan from "bunyan";
 import { logger } from '../logger';

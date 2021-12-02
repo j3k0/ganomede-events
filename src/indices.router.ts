@@ -7,8 +7,8 @@ import { createStore as createEventsStore, EventsStore } from './events.store';
 import { createStore as createRedisStore, RedisStore } from './redis.store';
 import { PubSub } from './redis.pubsub';
 import { Poll } from './poll';
-import { IndexerStorage } from './indexer/indexerSorage';
-import { IndexerStreamProcessor } from './indexer/IndexerStreamProcessor';
+import { IndexerStorage } from './indexer/indexer-storage';
+import { IndexerStreamProcessor } from './indexer/indexer-stream-processor';
 import { config } from '../config';
 
 export const indicesRouter = (prefix: string, server: Server, redisClient: RedisClient, store?: EventsStore): void => {

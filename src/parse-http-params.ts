@@ -1,5 +1,5 @@
 import { EventDefinition } from "./events.store";
-import { IndexDefinition } from "./models/IndexDefinition";
+import { IndexDefinition } from "./models/index-definition";
 
 const hasOwnProperty = (obj: {}, prop: string) => Object.hasOwnProperty.call(obj, prop);
 

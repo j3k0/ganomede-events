@@ -17,11 +17,11 @@ import { logger } from './logger';
 import bunyan from 'bunyan';
 import { EventsStore } from './events.store';
 import { GetIndicesEventsParam, parseIndicesGetParams, parseIndicesPostParams } from './parse-http-params';
-import { IndexerStorage } from './indexer/indexerSorage';
+import { IndexerStorage } from './indexer/indexer-storage';
 import { RedisClient } from 'redis';
-import { IndexerStreamProcessor } from './indexer/IndexerStreamProcessor';
+import { IndexerStreamProcessor } from './indexer/indexer-stream-processor';
 import async from 'async';
-import { IndexDefinition } from './models/IndexDefinition';
+import { IndexDefinition } from './models/index-definition';
 
 /**
 * Get the list of events by an index (middleware):

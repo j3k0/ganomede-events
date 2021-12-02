@@ -11,7 +11,7 @@ import { Poll } from "../poll";
 import { IndexerStorage } from "./indexerSorage";
 import { PollEventsParams, pollForEvents } from '../poll-for-events';
 import { IndexDefinition } from "../models/IndexDefinition";
-import { DefinedHttpError } from "restify-errors";
+import { DefinedHttpError, InternalServerError } from "restify-errors";
 import bunyan from "bunyan";
 import { logger } from '../logger';
 import lodash from 'lodash';
@@ -35,11 +35,19 @@ export class IndexerStreamProcessor {
 
   //process last fetched events, and add them to storageIndexer
   processEvents(indexDefinition: IndexDefinition, cb: (e: Error | null, results: any | null) => void) {
+
+    // We should poll every unprocessed event.
+    // Setting a very high limit so we don't stall the server.
+    // This will fail if there are more than 100000 unprocessed events.
+    // If the number of returned events is equal to params.limit, we'll just fail the request,
+    // so the client retries it until all events have been processed.
+    // A better solution would be to repeatedly poll until the number of returned events is lower
+    // than params.limit.
     let params: PollEventsParams = {
       channel: indexDefinition.channel,
       clientId: indexDefinition.id,
       after: 0,
-      limit: 100,
+      limit: 100000,
       afterExplicitlySet: false
     };
 
@@ -64,9 +72,16 @@ export class IndexerStreamProcessor {
       //run async.series accross the adding tasks to the storage indexer.
       async.parallel(tasks, (err, data) => {
         if (err) {
-          return cb(err, null);
+          cb(err, null);
         }
-        cb(null, data);
+        else if (events.length === params.limit) {
+          cb(new InternalServerError({
+            message: 'Too many unprocessed events, please repeat the request.'
+          }), null);
+        }
+        else {
+          cb(null, data);
+        }
       });
 
     })

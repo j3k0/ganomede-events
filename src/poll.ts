@@ -37,7 +37,6 @@ export class Poll {
   }
 
   public listen = (channel?: string, callback?: ((e: Error | null, m: string | null | number) => void | boolean) | null) => {
-
     const done = (err: Error | null, message: string | null) => {
       if (timeoutId) {
         this.clearTimeout(timeoutId);

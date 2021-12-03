@@ -21,16 +21,38 @@ describe('EventsClient', () => {
       path: '/events/v1/events?channel=channel&limit=10&clientId=test&secret=api_secret'
     });
 
-    td.replace((client as any).api, 'get', td.function());
+    td.replace(client.api, 'get', td.function());
     //console.log((client as any).api.get.toString());
 
-    td.when((client as any).api.get(validPath, td.matchers.anything()))
+    td.when(client.api.get(validPath, td.matchers.anything()))
       .thenDo((path, cb: (e: Error | null, req, res, obj: any) => void) => {
         cb(null, null, null, { ok: true });
       });
     //.thenCallback(null, { ok: true });
 
     client.getEvents(cursor, (err, events) => {
+      expect(err).to.be.null;
+      expect(events).to.eql({ ok: true });
+      done();
+    });
+  });
+
+  it('#getLatestEvents() request latest events', (done) => {
+    const client = createClient();
+    const validPath = td.matchers.contains({
+      path: '/events/v1/latest?channel=channel&limit=10&secret=api_secret'
+    });
+
+    td.replace(client.api, 'get', td.function());
+    //console.log((client as any).api.get.toString());
+
+    td.when(client.api.get(validPath, td.matchers.anything()))
+      .thenDo((path, cb: (e: Error | null, req, res, obj: any) => void) => {
+        cb(null, null, null, { ok: true });
+      });
+    //.thenCallback(null, { ok: true });
+
+    client.getLatestEvents('channel', 10, (err, events) => {
       expect(err).to.be.null;
       expect(events).to.eql({ ok: true });
       done();
@@ -56,9 +78,9 @@ describe('EventsClient', () => {
         data: { something: true }
       };
 
-      td.replace((client as any).api, 'post', td.function());
+      td.replace(client.api, 'post', td.function());
 
-      td.when((client as any).api.post(expectedPath, expectedBody, td.matchers.anything()))
+      td.when(client.api.post(expectedPath, expectedBody, td.matchers.anything()))
         .thenDo((path, body, cb: (e: Error | null, req, res, obj: any) => void) => {
           cb(null, null, null, reply);
         });
@@ -80,9 +102,9 @@ describe('EventsClient', () => {
         headers: { 'x-request-id': 'deadbeef' }
       };
 
-      td.replace((client as any).api, 'post', td.function());
+      td.replace(client.api, 'post', td.function());
 
-      td.when((client as any).api.post(expectedOptions, td.matchers.isA(Object), td.matchers.anything()))
+      td.when(client.api.post(expectedOptions, td.matchers.isA(Object), td.matchers.anything()))
         .thenDo((path, body, cb: (e: Error | null, req, res, obj: any) => void) => {
           cb(null, null, null, reply);
         });

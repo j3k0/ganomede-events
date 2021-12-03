@@ -72,7 +72,7 @@ describe('events.store', () => {
       td.when(itemsStore.loadItems('channel', 5, 99, td.callback))
         .thenCallback(null, [1, 2, 3]);
 
-      subject.loadEvents('channel', { clientId: 'client', limit: 99 }, (err, events) => {
+      subject.loadEvents('channel', { clientId: 'client', limit: 99, after: 0 }, (err, events) => {
         expect(err).to.be.null;
         expect(events).to.eql([1, 2, 3]);
         done();

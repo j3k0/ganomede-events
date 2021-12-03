@@ -36,7 +36,7 @@ export class RedisStore implements IRedisStore {
     this.redis.set(key, String(idx), (err) => callback(err));
   }
 
-  nextIndex(channel: string, callback: (e: Error | null, event?: any) => void): void {
+  nextIndex(channel: string, callback: (e: Error | null, index?: number) => void): void {
     this.redis.incr(`${INDICES}:${channel}`, callback);
   }
 
@@ -65,6 +65,7 @@ export class RedisStore implements IRedisStore {
         : callback(null, []);
     };
 
+
     async.waterfall([
       retrieveKeys,
       pullAllItems
@@ -76,10 +77,20 @@ export class RedisStore implements IRedisStore {
     });
   }
 
+  getItemsByIds(channel: string, ids: string[], callback: (e?: Error | null, results?: any) => void) {
+    const retrieveKeys = (cb: (e: Error | null | undefined, res?: any | null) => void) => {
+      let eventKeys = ids.map((id) => { return key(channel, id); });
+      cb(null, eventKeys);
+    };
+
+    this._loadItems(callback, retrieveKeys);
+  }
+
   loadItems(channel: string, start: number | undefined, limit: number, callback: (e: Error | null | undefined, res?: any) => void): void {
-    const retrieveKeys = (callback: (e: Error | null | undefined, res?: any) => void) =>
+    const retrieveKeys = (callback: (e: Error | null | undefined, res?: any) => void) => {
       this.redis.zrangebyscore(key(channel, KEYS),
         addOne(start), '+inf', 'LIMIT', 0, limit, callback);
+    }
 
     this._loadItems(callback, retrieveKeys);
   }

@@ -122,5 +122,9 @@ export class Client extends EventEmitter {
 
     this.client.sendEvent(channel, event, callback);
   }
+
+  getLatestEvents(channel: string, limit: number = 100, callback: (err: Error, events: []) => void) {
+    this.client.getLatestEvents(channel, limit, callback);
+  }
 }
 

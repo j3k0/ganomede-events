@@ -5,6 +5,8 @@ if (!module.parent) {
   main();
 }
 
-module.exports = {
-  Client: require('./src/client/Client')
-};
+// module.exports = {
+//   Client: require('./src/client/Client')
+// };
+
+export { Client } from './src/client/Client';

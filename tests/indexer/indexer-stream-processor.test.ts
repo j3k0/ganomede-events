@@ -64,8 +64,9 @@ describe('IndexerStreamProcessor', () => {
       });
     });
 
+    let counter = 1;
     const eventWithData = (data: any): Event => ({
-      id: +new Date(),
+      id: counter++,
       timestamp: +new Date(),
       type: 'event-type',
       from: 'event-sender',
@@ -105,29 +106,35 @@ describe('IndexerStreamProcessor', () => {
       });
     });
 
-    it('fails when there are too many unprocessed events, but still processes them', (done) => {
+    it('polls repeatidly when there are more unprocessed events than the polling limit', (done) => {
       const limit = 10;
       const doubles = createDoubles();
       const processor = new IndexerStreamProcessor(doubles.poll, doubles.store, doubles.storage, doubles.logger, doubles.pollForEvents);
       processor.pollingLimit = limit;
       const newEvents: Event[] = [];
-      while (newEvents.length < limit) {
+      while (newEvents.length < limit + 1) {
         newEvents.push(eventWithData({ field: 'my-field-value' }));
       }
+      let pendingEvents: Event[] = newEvents.slice();
       const addResult = { result: 'added-to-index' };
-      td.when(doubles.pollForEvents(doubles.store, doubles.poll, expectedParams(limit), td.callback))
-        .thenCallback(null, newEvents);
+      td.when(doubles.pollForEvents(doubles.store, doubles.poll, expectedParams(limit), td.matchers.anything()))
+        .thenDo((_store, _poll, _params, cb) => {
+          setImmediate(cb, null, pendingEvents.slice(0, limit));
+          pendingEvents = pendingEvents.slice(limit);
+        });
       const added = {};
-      td.when(doubles.storage.addToIndex(td.matchers.anything(), td.matchers.anything(), td.matchers.anything(), td.callback))
-        .thenDo((_definition, event:Event, _value:string, _cb) => {
+      td.when(doubles.storage.addToIndex(td.matchers.anything(), td.matchers.anything(), td.matchers.anything(), td.matchers.anything()))
+        .thenDo((_definition, event:Event, _value:string, cb) => {
           added[event.id] = true;
+          cb(null);
         });
       processor.processEvents(indexDefinition, (err, results) => {
-        // Fails with error 500.
-        expect((err as DefinedHttpError)?.statusCode).to.equal(500);
-        expect(err?.message).to.equal('Too many unprocessed events, please repeat the request.');
-        // Still, it has added the events to storage.
-        newEvents.forEach(e => expect(added[e.id]).to.equal(true));
+        expect(err).to.be.null;
+        // All events have been added to storage.
+        expect(pendingEvents.length).to.equal(0);
+        newEvents.forEach(e => {
+          expect(added[e.id]).to.equal(true);
+        });
         done();
       });
     });

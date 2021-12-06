@@ -39,13 +39,12 @@ export class IndexerStreamProcessor {
   //process last fetched events, and add them to storageIndexer
   processEvents(indexDefinition: IndexDefinition, cb: (e: Error | null, results: any | null) => void) {
 
-    // We should poll every unprocessed event.
+    // We should poll EVERY unprocessed event.
     // Setting a very high limit so we don't stall the server.
     // This will fail if there are more than 100000 unprocessed events.
-    // If the number of returned events is equal to params.limit, we'll just fail the request,
-    // so the client retries it until all events have been processed.
-    // A better solution would be to repeatedly poll until the number of returned events is lower
-    // than params.limit.
+    // As long as the number of returned events is equal to params.limit,
+    // we'll repeatedly poll for events.
+    // This ensures we processed ALL pending events.
     let params: PollEventsParams = {
       channel: indexDefinition.channel,
       clientId: indexDefinition.id,
@@ -78,7 +77,7 @@ export class IndexerStreamProcessor {
           cb(err, null);
         }
         else if (events.length === params.limit) {
-          cb(new InternalServerError('Too many unprocessed events, please repeat the request.'), null);
+          this.processEvents(indexDefinition, cb);
         }
         else {
           cb(null, data);

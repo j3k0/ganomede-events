@@ -42,7 +42,7 @@ describe('IndexerClient', () => {
         cb(null, null, null, getIndiceEventsRes);
       });
 
-    client.getIndiceEvents(INDEX_ID, INDEX_VALUE, (err, res) => {
+    client.getIndexEvents(INDEX_ID, INDEX_VALUE, (err, res) => {
       expect(err).to.be.null;
       expect(res).to.equal(getIndiceEventsRes);
       done();

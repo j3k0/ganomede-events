@@ -10,3 +10,4 @@ if (!module.parent) {
 // };
 
 export { Client } from './src/client/Client';
+export { IndexerClient } from './src/client/IndexerClient';

@@ -4,11 +4,11 @@ import { GetIndexEventsResult } from '../models/get-index-events-result';
 
 export class IndexerClient extends BaseClient {
 
-  secret: string;
+  secret?: string;
   pathPrefix: string;
 
   constructor({ protocol, hostname, port, pathnamePrefix, secret, agent }:
-    { protocol: string, hostname: string, port: number, pathnamePrefix: string, secret: string, agent?: string }) {
+    { protocol: string, hostname: string, port: number, pathnamePrefix: string, secret?: string, agent?: string }) {
     super(`${protocol}://${hostname}:${port}${pathnamePrefix}`, { agent });
     this.pathPrefix = pathnamePrefix;
     this.secret = secret;

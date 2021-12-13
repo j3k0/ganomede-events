@@ -1,13 +1,16 @@
 app:
     build: .
     dockerfile: Dockerfile
-    command: node index.js
+    command: npm start
     volumes:
+     - ./index.ts:/home/app/code/index.ts
+     - ./config.ts:/home/app/code/config.ts
      - ./src:/home/app/code/src
      - ./tests:/home/app/code/tests
     links:
      - redis
     environment:
+     - "APP_NAME=test"
      - "API_SECRET=1234"
      - "REDIS_EVENTS_PORT_6379_TCP_ADDR=redis"
     ports:
@@ -18,12 +21,15 @@ sut:
     dockerfile: Dockerfile
     command: sh -c "npm run lint && npm test && ./tests/rest_api.sh"
     volumes:
+     - ./index.ts:/home/app/code/index.ts
+     - ./config.ts:/home/app/code/config.ts
      - ./src:/home/app/code/src
      - ./tests:/home/app/code/tests
     links:
      - redis
      - app
     environment:
+     - "APP_NAME=test"
      - "REDIS_EVENTS_PORT_6379_TCP_ADDR=redis"
      - "BASE_URL=http://app:8000"
 

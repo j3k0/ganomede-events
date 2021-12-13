@@ -6,7 +6,7 @@
   "main": "index.ts",
   "scripts": {
     "prepublish": "npm run snyk-protect && npm run lint && npm run test",
-    "start": "node -r source-map-support/register build/src/index.js",
+    "start": "node -r source-map-support/register build/index.js",
     "startw": "nodemon --exec \"npm start\" --watch build",
     "test": "API_SECRET=1 npx mocha --colors --require ts-node/register --extensions ts tests/*.test.ts tests/**/*.test.ts | bunyan -l error -o short --color",
     "testw": "nodemon --ext ts --watch src/ --watch tests/ --watch config.ts --exec \"npm test\"",
@@ -46,10 +46,10 @@
     "@types/restify": "^8.4.2",
     "@types/restify-errors": "^4.3.3",
     "@types/supertest": "^2.0.11",
-    "@typescript-eslint/eslint-plugin": "^5.4.0",
-    "@typescript-eslint/parser": "^5.4.0",
+    "@typescript-eslint/eslint-plugin": "^5.6.0",
+    "@typescript-eslint/parser": "^5.6.0",
     "chai": "^3.5.0",
-    "eslint": "^3.19.0",
+    "eslint": "^8.4.1",
     "istanbul": "^0.4.5",
     "mocha": "^9.1.3",
     "nodemon": "^1.11.0",
@@ -67,9 +67,10 @@
     "node-statsd": "^0.1.1",
     "redis": "^2.6.5",
     "restify": "^8.5.1",
-    "restify-errors": "^8.0.2",
     "restify-clients": "^4.0.0",
-    "snyk": "^1.30.1"
+    "restify-errors": "^8.0.2",
+    "snyk": "^1.30.1",
+    "source-map-support": "^0.5.21"
   },
   "snyk": true
 }

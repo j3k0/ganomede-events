@@ -1,5 +1,7 @@
 {
   "include": [
+    "index.ts",
+    "config.ts",
     "src/**/*",
     "tests/**/*"
   ],

@@ -3,9 +3,9 @@
   "version": "1.5.0",
   "api": "events/v1",
   "description": "NodeJS pub/sub library using ganomede-notifications",
-  "main": "index.ts",
+  "main": "build/index.js",
   "scripts": {
-    "prepublish": "npm run snyk-protect && npm run lint && npm run test",
+    "prepublish": "npm run snyk-protect && npm run build && npm run lint && npm run test",
     "start": "node -r source-map-support/register build/index.js",
     "startw": "nodemon --exec \"npm start\" --watch build",
     "test": "API_SECRET=1 npx mocha --colors --require ts-node/register --extensions ts tests/*.test.ts tests/**/*.test.ts | bunyan -l error -o short --color",

@@ -11,7 +11,7 @@ import { Poll } from "../poll";
 import { IndexerStorage } from "./indexer-storage";
 import { EventsPoller, PollEventsParams, pollForEvents as defaultPollForEvents } from '../poll-for-events';
 import { IndexDefinition } from "../models/index-definition";
-import { DefinedHttpError, InternalServerError } from "restify-errors";
+import { DefinedHttpError } from "restify-errors";
 import bunyan from "bunyan";
 import { logger } from '../logger';
 import lodash from 'lodash';
@@ -45,7 +45,7 @@ export class IndexerStreamProcessor {
     // As long as the number of returned events is equal to params.limit,
     // we'll repeatedly poll for events.
     // This ensures we processed ALL pending events.
-    let params: PollEventsParams = {
+    const params: PollEventsParams = {
       channel: indexDefinition.channel,
       clientId: indexDefinition.id,
       after: 0,
@@ -59,15 +59,14 @@ export class IndexerStreamProcessor {
         this.log.error(err, 'processEvents.pollForEvents failed');
         return cb(err, null);
       }
-      let that = this;
-      let tasks: any[] = [];
+      const tasks: any[] = [];
 
       //foreeach event fetchec, we need to add to the index in a series way.
       events.forEach(event => {
 
-        let value = lodash.get(event, indexDefinition.field, undefined);
+        const value = lodash.get(event, indexDefinition.field, undefined);
         if (value !== null && value !== undefined && typeof value === "string") {
-          tasks.push(cb2 => that.indexerStorage.addToIndex(indexDefinition, event, value, cb2));
+          tasks.push(cb2 => this.indexerStorage.addToIndex(indexDefinition, event, value, cb2));
         }
       });
 

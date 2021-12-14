@@ -58,7 +58,7 @@ export class PubSub {
   private getChannelHandlers = (channel: string) =>
     this.channelHandlers[channel] || [];
 
-  publish(channel: string, message: string | number | null | undefined | {} | Buffer, cb: (e: Error | null) => void): void {
+  publish(channel: string, message: string | number | null | undefined | Record<string, unknown> | Buffer, cb: (e: Error | null) => void): void {
 
     // logger.info({channel}, 'pubsub.publish: ' + message);
     if (!this.isValidMessage(message) || message == null || message == undefined)

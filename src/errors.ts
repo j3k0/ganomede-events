@@ -59,11 +59,11 @@ export enum Severity {
   info = 'info', // (30): Detail on regular operation.
   debug = 'debug', // (20): Anything else, i.e. too verbose to be included in "info" level.
   trace = 'trace', // (10): Logging from external libraries used by your app or very detailed application logging.
-};
+}
 
 class GanomedeError extends Error {
 
-  statusCode: number = 0;
+  statusCode = 0;
   severity: Severity;
   constructor(...messageArgs: any) {
     super();
@@ -71,7 +71,7 @@ class GanomedeError extends Error {
     this.severity = Severity.error;
 
     if (messageArgs.length > 0)
-      this.message = util.format.apply(util, messageArgs);
+      this.message = util.format(...messageArgs);
 
     Error.captureStackTrace(this, this.constructor);
   }

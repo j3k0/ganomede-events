@@ -18,10 +18,10 @@ import bunyan from 'bunyan';
 import { EventsStore } from './events.store';
 import { GetIndicesEventsParam, parseIndicesGetParams, parseIndicesPostParams } from './parse-http-params';
 import { IndexerStorage } from './indexer/indexer-storage';
-import { RedisClient } from 'redis';
 import { IndexerStreamProcessor } from './indexer/indexer-stream-processor';
 import async from 'async';
 import { IndexDefinition } from './models/index-definition';
+import { GetIndexEventsResult } from './models/get-index-events-result';
 
 /**
 * Get the list of events by an index (middleware):
@@ -47,7 +47,7 @@ export const createGetMiddleware = (store: EventsStore, indexerStorage: IndexerS
   log: bunyan = logger) => (req: Request, res: Response, next: NextFunction) => {
 
 
-    let params = parseIndicesGetParams(req.params);
+    const params = parseIndicesGetParams(req.params);
     if (params instanceof Error)
       return next(new InvalidContentError(params.message));
 
@@ -78,12 +78,12 @@ export const createGetMiddleware = (store: EventsStore, indexerStorage: IndexerS
     };
 
     //prepare the last response to return to the client.
-    const prepareLastResponse = (indexDef: IndexDefinition, result: any, cb) => {
-      let response = {
-        "id": (params as GetIndicesEventsParam).indexId,
-        "field": indexDef.field,
-        "value": (params as GetIndicesEventsParam).indexValue,
-        "rows": result
+    const prepareLastResponse = (indexDef: IndexDefinition, result: any, cb: (e: Error | null, r: GetIndexEventsResult) => void) => {
+      const response: GetIndexEventsResult = {
+        id: (params as GetIndicesEventsParam).indexId,
+        field: indexDef.field,
+        value: (params as GetIndicesEventsParam).indexValue,
+        rows: result
       }
       cb(null, response);
     }
@@ -118,7 +118,7 @@ export const createGetMiddleware = (store: EventsStore, indexerStorage: IndexerS
 */
 export const createPostMiddleware = (indexerStorage: IndexerStorage,
   log: bunyan = logger) => (req: Request, res: Response, next: NextFunction) => {
-    let params = parseIndicesPostParams(req.body);
+    const params = parseIndicesPostParams(req.body);
     if (params instanceof Error)
       return next(new InvalidContentError(params.message));
 

@@ -33,7 +33,7 @@ export const defaultIfNotFunction = (data: any, def: any) => {
 };
 
 export const nopIfNotFunction = (data: any) => {
-  return defaultIfNotFunction(data, () => { });
+  return defaultIfNotFunction(data, () => undefined);
 };
 
 export const addOne = (data: any) => {

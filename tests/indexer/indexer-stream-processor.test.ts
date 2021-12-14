@@ -29,7 +29,7 @@ describe('IndexerStreamProcessor', () => {
       };
     }
 
-    function expectedParams(limit: number = 100000): PollEventsParams {
+    function expectedParams(limit = 100000): PollEventsParams {
       return {
         clientId: 'my-index',
         channel: 'my-channel',
@@ -37,7 +37,7 @@ describe('IndexerStreamProcessor', () => {
         limit,
         afterExplicitlySet: false
       }
-    };
+    }
 
     const indexDefinition = {
       id: 'my-index',
@@ -48,7 +48,7 @@ describe('IndexerStreamProcessor', () => {
     it('tries to load 100000 events from the index associated channel', () => {
       const doubles = createDoubles();
       const processor = new IndexerStreamProcessor(doubles.poll, doubles.store, doubles.storage, doubles.logger, doubles.pollForEvents);
-      processor.processEvents(indexDefinition, (err, results) => { });
+      processor.processEvents(indexDefinition, () => undefined);
       td.verify(doubles.pollForEvents(doubles.store, doubles.poll, expectedParams(), td.callback));
     });
 
@@ -124,7 +124,7 @@ describe('IndexerStreamProcessor', () => {
         });
       const added = {};
       td.when(doubles.storage.addToIndex(td.matchers.anything(), td.matchers.anything(), td.matchers.anything(), td.matchers.anything()))
-        .thenDo((_definition, event:Event, _value:string, cb) => {
+        .thenDo((_definition, event: Event, _value: string, cb) => {
           added[event.id] = true;
           cb(null);
         });

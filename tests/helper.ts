@@ -17,7 +17,7 @@ export const prepareRedisClient = (cb: (r: RedisClient) => void) =>
   (done: () => void) => {
 
 
-    let redisClient: any = td.object(['zrange', 'mget', 'quit', 'set', 'on', 'subscribe', 'multi', 'get', 'publish', 'subscribe']);
+    const redisClient: any = td.object(['zrange', 'mget', 'quit', 'set', 'on', 'subscribe', 'multi', 'get', 'publish', 'subscribe']);
     const handlers: { [type: string]: Array<(channel: string, message: string) => void> } = {};
     redisClient.on = (type: string, handler: (channel: string, message: string) => void) => {
       handlers[type] = (handlers[type] || []).concat(handler);
@@ -48,12 +48,11 @@ export const prepareRedisClient = (cb: (r: RedisClient) => void) =>
 export const testableWhen = (isTestRunnable: () => boolean, test: (x: () => void) => void) => {
   // no arrow function here:
   // https://github.com/mochajs/mochajs.github.io/pull/14/files
-  let that = this;
-  return function (done: () => void) {
+  return (done: () => void) => {
     if (isTestRunnable())
       test(done);
     else
-      (that as any).skip && (that as any).skip();
+      (this as any).skip && (this as any).skip();
   };
 };
 

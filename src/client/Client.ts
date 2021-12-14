@@ -6,7 +6,7 @@ import { EventsClient } from './EventsClient';
 import { config } from '../../config';
 import { setImmediate } from 'async';
 
-const noop = () => { };
+const noop = () => undefined;
 
 // Some events are special, and have nothing to do with our channles,
 // we should not start HTTP request for them. should not monitor them:
@@ -38,6 +38,7 @@ export class Client extends EventEmitter {
     super();
 
     const normalizedProtocol = protocol.endsWith(':') ? protocol : `${protocol}:`;
+    /* eslint-disable */
     const agentArg = agent || require(normalizedProtocol.slice(0, -1)).globalAgent;
 
     this.client = new EventsClient({
@@ -102,7 +103,7 @@ export class Client extends EventEmitter {
 
   send(channel: string, eventArg: { from: string, type: string, data?: any }, callback: ((e: Error, h: any) => void) = noop) {
     const { from, type, data } = eventArg;
-    const hasData = eventArg.hasOwnProperty('data');
+    const hasData = Object.prototype.hasOwnProperty.call(eventArg, 'data');// eventArg.hasOwnProperty('data');
 
     if (ignoreChannels.includes(channel))
       return setImmediate(callback, new TypeError(`channel can not be any of ${ignoreChannels.join(', ')}`));
@@ -123,7 +124,7 @@ export class Client extends EventEmitter {
     this.client.sendEvent(channel, event, callback);
   }
 
-  getLatestEvents(channel: string, limit: number = 100, callback: (err: Error, events: []) => void) {
+  getLatestEvents(channel: string, limit = 100, callback: (err: Error, events: []) => void) {
     this.client.getLatestEvents(channel, limit, callback);
   }
 }

@@ -69,7 +69,7 @@ describe('redis.store', function () {
 
   describe('#nextIndex()', () => {
     it('returns index for a channel', testableWhen(hasStore, (done) => {
-      let redisClient: any = td.object(['incr']);
+      const redisClient: any = td.object(['incr']);
       const store = createStore(redisClient);
 
       td.when(redisClient.incr('indices:channel', td.callback))

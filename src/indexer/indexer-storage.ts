@@ -12,11 +12,11 @@ import { RedisClient } from "redis";
 import { Event } from "../events.store";
 import { IndexDefinition } from "../models/index-definition";
 
-const INDICES_KEYS: string = 'indices';
+const INDICES_KEYS = 'indices';
 
 export class IndexerStorage {
 
-  indexPrefix: string = 'index';
+  indexPrefix = 'index';
   redis: RedisClient;
   constructor(redisClient: RedisClient) {
     this.redis = redisClient;

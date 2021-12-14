@@ -51,7 +51,7 @@ export class RedisStore implements IRedisStore {
         if (err)
           return callback(err);
 
-        if (results[0] === null)
+        if (results.length > 0 && results[0] === null)
           return callback(new Error('Item already exists'), results);
 
         callback(null, results);

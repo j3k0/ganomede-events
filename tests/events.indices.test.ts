@@ -119,10 +119,7 @@ describe('events.indices check api', () => {
     const sendData = Object.assign(
       { secret: process.env.API_SECRET }, CREATE_INDEX_REQ_BODY);
 
-    td.when(redisClient?.multi(td.callback as any))
-      .thenCallback(null, ['OK']);
-
-    td.when(redisClient?.set(`indices:${INDEX_ID}`, td.matchers.anything(), td.matchers.anything(), td.callback)).
+    td.when(redisClient?.set(`indices:${INDEX_ID}`, td.matchers.anything(), 'NX', td.callback)).
       thenCallback(null, "OK");
 
     supertest(server)
@@ -141,5 +138,40 @@ describe('events.indices check api', () => {
       });
   });
 
+  it('should be possible to create an index multiple times', (done: Mocha.Done) => {
+    const sendData = Object.assign(
+      { secret: process.env.API_SECRET }, CREATE_INDEX_REQ_BODY);
+
+    td.when(redisClient?.set(`indices:${INDEX_ID}`, td.matchers.anything(), 'NX', td.callback)).
+      thenCallback(null, null);
+
+      supertest(server)
+      .post(url)
+      .send(sendData)
+      .expect(200)
+      .then((res) => {
+        expect(res.status).to.equal(200);
+        expect(res.body).to.eq("OK");
+        supertest(server)
+        .post(url)
+        .send(sendData)
+        .expect(200)
+        .then((res) => {
+          expect(res.status).to.equal(200);
+          expect(res.body).to.eq("OK");
+          done();
+        }, (err) => {
+          expect(err).to.be.null;
+        })
+        .catch((error) => {
+          done();
+        });
+      }, (err) => {
+        expect(err).to.be.null;
+      })
+      .catch((error) => {
+        done();
+      });
+  });
 
 });

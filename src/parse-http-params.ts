@@ -123,7 +123,7 @@ export const parseLatestGetParams = (params: LatestEventsParam = { channel: '', 
   if (!channel)
     return new Error('Invalid Channel');
 
-  const limit = parseLimit(params.limit);
+  const limit = toInt(params.limit, 100);
 
   return {
     channel,

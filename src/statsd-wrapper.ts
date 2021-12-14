@@ -4,13 +4,13 @@ import Logger from 'bunyan';
 
 export const dummyClient = () => {
   return {
-    increment: function () { },
-    timing: function () { },
-    decrement: function () { },
-    histogram: function () { },
-    gauge: function () { },
-    set: function () { },
-    unique: function () { }
+    increment: () => undefined,
+    timing: () => undefined,
+    decrement: () => undefined,
+    histogram: () => undefined,
+    gauge: () => undefined,
+    set: () => undefined,
+    unique: () => undefined,
   };
 };
 

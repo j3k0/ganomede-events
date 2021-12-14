@@ -58,7 +58,7 @@ describe('events.indices check api', () => {
 
   it(`expects to return 2 events out of 3 for the value '${INDEX_VALUE}'`, (done: Mocha.Done) => {
 
-    let getUrl = [url, INDEX_ID, INDEX_VALUE].join('/');
+    const getUrl = [url, INDEX_ID, INDEX_VALUE].join('/');
 
     td.when(redisClient?.get(`indices:${INDEX_ID}`, td.callback)).
       thenCallback(null, JSON.stringify(CREATE_INDEX_REQ_BODY));
@@ -80,7 +80,7 @@ describe('events.indices check api', () => {
       ]);
 
     // td.when(redisClient?.multi(td.callback as any))
-      // .thenCallback(null, ['OK']);
+    // .thenCallback(null, ['OK']);
 
     td.when(redisMulti?.lrem(td.matchers.anything(), td.matchers.anything(), td.matchers.anything()))
       .thenReturn(redisMulti);

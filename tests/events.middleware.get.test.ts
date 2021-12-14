@@ -3,7 +3,7 @@
 import td from 'testdouble';
 import { Request, Response, Next as NextFunction } from 'restify';
 import { InternalServerError, InvalidContentError } from 'restify-errors'
-import { createMiddleware } from '../src/events.middleware.get';
+import { createMiddleware, GetMiddleware } from '../src/events.middleware.get';
 import { GetEventsParam, ParsedGetEventsParam, parseGetParams } from '../src/parse-http-params';
 import { expect } from 'chai';
 import { EventsStore } from '../src/events.store';
@@ -16,7 +16,7 @@ const calledOnce = { times: 1, ignoreExtraArgs: true };
 describe('events.middleware.get', () => {
   let poll: Poll;
   let store: EventsStore;
-  let middleware: any;
+  let middleware: GetMiddleware;
   let log: Logger;
   let req: Request;
   let res: Response;
@@ -178,8 +178,8 @@ describe('events.middleware.get', () => {
     const channel = 'channel';
 
     it('parses after to be int within [0, MAX_SAFE_INTEGER]', () => {
-      const t = (desiredAfter: number | undefined | string | {}, expected: number) => {
-        let params: GetEventsParam = { clientId, channel, after: desiredAfter };
+      const t = (desiredAfter: number | undefined | string | Record<string, unknown>, expected: number) => {
+        const params: GetEventsParam = { clientId, channel, after: desiredAfter };
         const actual = parseGetParams(params);
         expect((actual as ParsedGetEventsParam).after).to.equal(expected);
       };
@@ -197,8 +197,8 @@ describe('events.middleware.get', () => {
     });
 
     it('parses liimt to be int within [1, 100]', () => {
-      const t = (desiredLimit: number | undefined | string | {}, expected: number) => {
-        let params: GetEventsParam = { clientId, channel, limit: desiredLimit };
+      const t = (desiredLimit: number | undefined | string | Record<string, unknown>, expected: number) => {
+        const params: GetEventsParam = { clientId, channel, limit: desiredLimit };
         const actual = parseGetParams(params);
         expect((actual as ParsedGetEventsParam).limit).to.equal(expected);
       };

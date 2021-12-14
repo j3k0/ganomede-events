@@ -47,7 +47,7 @@ export const createGetMiddleware = (store: EventsStore, indexerStorage: IndexerS
   log: bunyan = logger) => (req: Request, res: Response, next: NextFunction) => {
 
 
-    let params = parseIndicesGetParams(req.params);
+    const params = parseIndicesGetParams(req.params);
     if (params instanceof Error)
       return next(new InvalidContentError(params.message));
 
@@ -79,7 +79,7 @@ export const createGetMiddleware = (store: EventsStore, indexerStorage: IndexerS
 
     //prepare the last response to return to the client.
     const prepareLastResponse = (indexDef: IndexDefinition, result: any, cb: (e: Error | null, r: GetIndexEventsResult) => void) => {
-      let response: GetIndexEventsResult = {
+      const response: GetIndexEventsResult = {
         id: (params as GetIndicesEventsParam).indexId,
         field: indexDef.field,
         value: (params as GetIndicesEventsParam).indexValue,
@@ -118,7 +118,7 @@ export const createGetMiddleware = (store: EventsStore, indexerStorage: IndexerS
 */
 export const createPostMiddleware = (indexerStorage: IndexerStorage,
   log: bunyan = logger) => (req: Request, res: Response, next: NextFunction) => {
-    let params = parseIndicesPostParams(req.body);
+    const params = parseIndicesPostParams(req.body);
     if (params instanceof Error)
       return next(new InvalidContentError(params.message));
 

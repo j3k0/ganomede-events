@@ -98,13 +98,13 @@ describe('events.latest.get', () => {
 
   it(`expects to return the latest 1 event out of 2 events `, (done) => {
 
-    let eventsArray: { [type: string]: any[] } = {};
+    const eventsArray: { [type: string]: any[] } = {};
     let i = 1;
 
     // add some logic to storeEvents.addEvent so we can add events later
     when(store?.addEvent(SUCCESS_CHANNEL, anything(), td.callback))
       .thenDo((channel: string, event: any, cb: AsyncResultCallback<any, Error>) => {
-        let eventWithId: {} = Object.assign(
+        const eventWithId = Object.assign(
           { id: i }, event);
         if (!eventsArray[channel]) eventsArray[channel] = [];
 
@@ -114,8 +114,8 @@ describe('events.latest.get', () => {
       });
 
     // add events1 and 2
-    store?.addEvent(SUCCESS_CHANNEL, SUCCESS_EVENT1, () => { });
-    store?.addEvent(SUCCESS_CHANNEL, SUCCESS_EVENT2, () => { });
+    store?.addEvent(SUCCESS_CHANNEL, SUCCESS_EVENT1, () => undefined);
+    store?.addEvent(SUCCESS_CHANNEL, SUCCESS_EVENT2, () => undefined);
 
     //add the logic to load the latest N elements
     td.when(store?.loadLatestItems(SUCCESS_CHANNEL, 1, anything()))

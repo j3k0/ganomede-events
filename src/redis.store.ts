@@ -72,14 +72,16 @@ export class RedisStore implements IRedisStore {
     ], (err, items: any) => {
       try {
         items = items.map(JSON.parse);
-      } catch (e) { }
+      } catch (e) {
+        // we ignore the error here, to bypass lint mepty-block-statement
+      }
       callback(err, items);
     });
   }
 
   getItemsByIds(channel: string, ids: string[], callback: (e?: Error | null, results?: any) => void) {
     const retrieveKeys = (cb: (e: Error | null | undefined, res?: any | null) => void) => {
-      let eventKeys = ids.map((id) => { return key(channel, id); });
+      const eventKeys = ids.map((id) => { return key(channel, id); });
       cb(null, eventKeys);
     };
 

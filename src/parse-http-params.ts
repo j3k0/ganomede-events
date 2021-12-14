@@ -1,9 +1,9 @@
 import { EventDefinition } from "./events.store";
 import { IndexDefinition } from "./models/index-definition";
 
-const hasOwnProperty = (obj: {}, prop: string) => Object.hasOwnProperty.call(obj, prop);
+const hasOwnProperty = (obj: Record<string, unknown>, prop: string) => Object.hasOwnProperty.call(obj, prop);
 
-const toInt = (something: any, defaultValue: number = NaN) => {
+const toInt = (something: any, defaultValue = NaN) => {
   const str = String(something);
   const int = parseInt(str, 10);
   const ok = isFinite(int) && (String(int)) === str;
@@ -40,8 +40,8 @@ export type ParsedGetEventsParam = {
 export type GetEventsParam = {
   clientId: string;
   channel: string;
-  after?: number | string | {};
-  limit?: number | string | {};
+  after?: number | string | Record<string, unknown>;
+  limit?: number | string | Record<string, unknown>;
 }
 
 export type PostEventsParam = {
@@ -49,7 +49,7 @@ export type PostEventsParam = {
   channel: string;
   from?: string;
   type?: string;
-  data?: {};
+  data?: Record<string, unknown> | string;
 }
 
 export type LatestEventsParam = {

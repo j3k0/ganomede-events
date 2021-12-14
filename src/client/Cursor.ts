@@ -16,7 +16,7 @@ export type EventCursor = {
 }
 
 export class Cursor {
-  channel: string = '';
+  channel = '';
   after?: number | null;
   limit?: number | null;
   constructor(channel?: string, { after = null, limit = null }: CursorPosition = {}) {

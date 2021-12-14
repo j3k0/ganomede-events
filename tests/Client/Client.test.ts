@@ -3,8 +3,21 @@ import td from 'testdouble';
 import { config } from '../../config';
 import { Cursor } from '../../src/client/Cursor';
 
-const url = require('url');
+import { URL } from 'url';
+//const url = require('url');
 import { Client } from '../../src/client/Client';
+
+const parseUrl = (url: string) => {
+  const u = new URL(url);
+  return {
+    hash: u.hash,
+    pathname: u.pathname,
+    port: u.port,
+    search: u.search,
+    protocol: u.protocol,
+    hostname: u.hostname
+  };
+};
 
 describe('Client', () => {
   describe('new Client()', () => {
@@ -18,7 +31,7 @@ describe('Client', () => {
     const createClient = () => {
       const client = new Client('clientId', Object.assign(
         { secret: config.secret },
-        url.parse('http://localhost:3000/events/v1')
+        parseUrl('http://localhost:3000/events/v1') as any
       ));
 
       td.replace(client.client, 'getEvents', td.function());
@@ -162,7 +175,7 @@ describe('Client', () => {
     const createClient = () => {
       const client = new Client('clientId', Object.assign(
         { secret: config.secret },
-        url.parse('http://localhost:3000/events/v1')
+        parseUrl('http://localhost:3000/events/v1') as any
       ));
 
       td.replace(client.client, 'sendEvent', td.function());

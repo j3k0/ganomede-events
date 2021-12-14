@@ -20,6 +20,8 @@ import { logger } from './logger';
 import bunyan from 'bunyan';
 import { EventsStore } from './events.store';
 
+export type GetMiddleware = (req: Request, res: Response, next: NextFunction) => void;
+
 export const createMiddleware = (
   poll: Poll, // = createPoll,
   store: EventsStore,

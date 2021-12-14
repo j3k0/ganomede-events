@@ -11,8 +11,8 @@ describe('poll', () => {
 
   const CHANNEL = 'channel';
   const MESSAGE = 'message';
-  const POLL_TIMEOUT: number = 321;
-  const TIMEOUT_ID: number = 1;
+  const POLL_TIMEOUT = 321;
+  const TIMEOUT_ID = 1;
   let callback: (e?: Error | null, d?: any) => void;
   let log: Logger;
   let poll: Poll;

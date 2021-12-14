@@ -32,8 +32,9 @@ export class IndexerStorage {
       if (err)
         return callback(err);
 
-      if (results[0] === null)
-        return callback(new Error('Key already exists'), results);
+      // If the index already exists, it's not an error... The endpoint allows this.
+      // if (results[0] === null)
+      //   return callback(new Error('Key already exists'), results);
 
       callback(null, results);
     });

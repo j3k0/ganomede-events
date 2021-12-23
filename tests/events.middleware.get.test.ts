@@ -196,7 +196,7 @@ describe('events.middleware.get', () => {
       t(Number.MAX_SAFE_INTEGER + 1, 0);
     });
 
-    it('parses liimt to be int within [1, 100]', () => {
+    it('parses limit to be int within [1, +inf]', () => {
       const t = (desiredLimit: number | undefined | string | Record<string, unknown>, expected: number) => {
         const params: GetEventsParam = { clientId, channel, limit: desiredLimit };
         const actual = parseGetParams(params);
@@ -212,7 +212,7 @@ describe('events.middleware.get', () => {
       t(-1, 100);
       t('wierd', 100);
       t({}, 100);
-      t(500, 100);
+      t(500, 500);
     });
 
     it('defaults after/limit to 0/100', () => {

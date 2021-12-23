@@ -46,10 +46,10 @@ describe('parse-http-params', () => {
   });
 
   it('Use the provided limit in the config object', () => {
-    const parsed = parseLatestGetParams({ channel: NON_EMPTY_CHANNEL, limit: 20 });
+    const parsed = parseLatestGetParams({ channel: NON_EMPTY_CHANNEL, limit: 700 });
     expect(parsed).to.eql({
       channel: NON_EMPTY_CHANNEL,
-      limit: 20
+      limit: 700
     });
   });
 

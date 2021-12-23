@@ -27,7 +27,7 @@ const nonEmptyString = (paramValue: any, defaultValue = undefined) => {
 };
 
 const parseAfter = toIntWithinRange({ min: 0, byDefault: 0 });
-const parseLimit = toIntWithinRange({ min: 1, max: 100, byDefault: 100 });
+const parseLimit = toIntWithinRange({ min: 1, byDefault: 100 });
 
 export type ParsedGetEventsParam = {
   clientId: string;

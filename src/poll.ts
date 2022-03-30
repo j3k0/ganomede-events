@@ -31,9 +31,9 @@ export class Poll {
   }) {
     this.pubsub = options.pubsub;
     this.log = options.log!;
-    this.pollTimeout = options.pollTimeout!;
-    this.setTimeout = options.setTimeout!;
-    this.clearTimeout = options.clearTimeout!;
+    this.pollTimeout = zeroIfNaN(options.pollTimeout!);
+    this.setTimeout = (options.setTimeout) || (global.setTimeout);
+    this.clearTimeout = (options.clearTimeout) || (global.clearTimeout);
   }
 
   public listen = (channel?: string, callback?: ((e: Error | null, m: string | null | number) => void | boolean) | null) => {
